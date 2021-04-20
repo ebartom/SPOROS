@@ -18,9 +18,11 @@ my @headers;
 my %allSpecies;
 my %toxes;
 my $dataIndex = 0;
-my $toxIndex = 0;
-my $labelIndex = 0;
-my($read,$seed,@data,$label);
+my $humanToxIndex = 0;
+my $mouseToxIndex = 0;
+my $label_miRNAsIndex = 0;
+my $label_RNAworldIndex = 0;
+my($read,$seed,@data,$miRNAlabel,$RNAworldlabel);
 while(<AN>){
     chomp $_;
     if ($_ =~ /^Read/){
@@ -31,11 +33,17 @@ while(<AN>){
 		push(@dataIndices,$dataIndex);
 		$numSamples++;
 	    }
+	    if ($header =~ /miRNAs.nr/){
+		$label_miRNAsIndex = $dataIndex;
+	    }
 	    if ($header =~ /RNAworld/){
-		$labelIndex = $dataIndex;
+		$label_RNAworldIndex = $dataIndex;
 	    }
 	    if ($header =~ /3human/){
-		$toxIndex = $dataIndex;
+		$humanToxIndex = $dataIndex;
+	    }
+	    if ($header =~ /3mouse/){
+		$mouseToxIndex = $dataIndex;
 	    }
 	    $dataIndex++;
 	}
@@ -43,13 +51,18 @@ while(<AN>){
     }else{
 	($read,$seed,@data) = split(/\t/,$_);
 	#print ($read);
-       $label = $data[$labelIndex-2];
-	if ($label =~ /^([\.\-\_\w]+)\|?/){
-	    $label = $1;
+       $miRNAlabel = $data[$label_miRNAsIndex-2];
+	if ($miRNAlabel =~ /^([\.\-\_\w]+)\|?/){
+	    $miRNAlabel = $1;
 	}
-	my $species = "$seed\t$label";
-	my $tox = $data[$toxIndex-2];
-	$toxes{$species} = $tox;
+	$RNAworldlabel = $data[$label_RNAworldIndex-2];
+	if ($RNAworldlabel =~ /^([\.\-\_\w]+)\|?/){
+	    $RNAworldlabel = $1;
+	}
+	my $species = "$seed\t$miRNAlabel\t$RNAworldlabel";
+	my $toxHuman = $data[$humanToxIndex-2];
+	my $toxMouse = $data[$mouseToxIndex-2];
+	$toxes{$species} = "$toxHuman\t$toxMouse";
 	my @counts;
 	foreach my $index (@dataIndices){
 	    push (@counts,$data[$index-2]);
@@ -68,18 +81,21 @@ while(<AN>){
     }
 }
 
-print "Seed\tRNAworld BlastHit";
-my $toxLabel = $headers[$toxIndex];
-print "\t$toxLabel";
+print "Seed\tTop miRNA Source\tTop RNAworld Source";
+#my $toxLabel = $headers[$toxIndex];
+print "\tAvg of 3 Human Tox\tAvg of 3 Mouse Tox";
 
 foreach my $dataIndex (@dataIndices){
     my $header = $headers[$dataIndex];
     $header =~ s/.justReads.uniqCounts.txt//g;
+    $header =~ s/.justReads.uniqCounts.notUMId.txt//g;
+    $header =~ s/.justReads.uniqCounts.UMId.txt//g;
     print "\t$header";
 }
 
 print "\n";
-foreach my $seq (keys(%allSpecies)){
+my @sortedRNAspecies = sort (keys(%allSpecies));
+foreach my $seq (@sortedRNAspecies){
     print "$seq";
     my $tox = $toxes{$seq};
     print "\t$tox";
