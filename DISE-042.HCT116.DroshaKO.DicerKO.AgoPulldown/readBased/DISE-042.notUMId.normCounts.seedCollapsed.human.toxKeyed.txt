@@ -1,4 +1,4 @@
-Tox	DicerKO.rep1	DicerKO.rep2	DroshaKO.rep1	DroshaKO.rep2	Wildtype.rep1	Wildtype.rep2
+Avg of 3 Human Tox	DicerKO.rep1	DicerKO.rep2	DroshaKO.rep1	DroshaKO.rep2	Wildtype.rep1	Wildtype.rep2
 10	21.714	10.536	42.139	30.769	87.34	98.259
 10.1	32.054	35.122	40.033	39.959	4.279	4.359
 10.2	163.382	104.187	117.085	121.878	6.833	6.284
