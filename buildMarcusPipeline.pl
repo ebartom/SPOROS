@@ -195,6 +195,22 @@ print SH "done\n";
 print SH "\n# Pull out smaller subsets of these tables for Excel.\n";
 print SH "perl \$pipeline/thresholdNormTotal.pl \$project.noAdapter.".$type."rawCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.txt 20 > \$project.noAdapter.".$type."rawCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.minSum20.txt\n";
 print SH "perl \$pipeline/thresholdNormTotal.pl \$project.noAdapter.".$type."normCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.txt 6 > \$project.noAdapter.".$type."normCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.minSum6.txt\n";
+print SH "\n# Collapse counts for seed sequences from the same RNA species.\n";
+print SH "perl \$pipeline/collapseSpecies.pl \$project.noAdapter.".$type."normCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.minSum6.txt > \$project.".$type."normCounts.seedCollapsed.txt\n";
+print SH "\n# Collapse counts for seed sequences, regardless of RNA species of origin.\n";
+print SH "perl \$pipeline/collapseToxicityBins.pl \$project.".$type."normCounts.seedCollapsed.txt $organism\n";
+print SH "\n# Expand seed counts for each samples (and the average of any replicates) into lines in a text file, for weblogo.\n";
+print SH "perl \$pipeline/expandSequencesFromSeedKeyed.pl \$project.".$type."normCounts.seedCollapsed.$organism.seedKeyed.txt\n";
+print SH "\n# Run weblogo.\n";
+print SH "module load python/anaconda3.6\n";
+print SH "source activate /projects/p20742/envs/weblogo-py38\n";
+print SH "for f in *seeds.1000.txt\ndo\n";
+print SH "echo \$f\n";
+print SH "\tsample=\$\{f\%\%.txt\}\n";
+print SH "\tweblogo -f \$f -A rna -U probability -F pdf -o \$sample.pdf -c classic\n";
+print SH "done \n";
+
+
 if ($comparisons ne ""){
     print SH "\n# Run EdgeR on the comparisons file to identify differentially abundant reads.\n";
     print SH "# (Note that assembly is not actually used here, because these are reads, not gene IDs)\n";
@@ -211,6 +227,18 @@ if ($comparisons ne ""){
     print SH "\tperl $questMarcus/usefulFiles/addAllToxicities.pl $questMarcus/usefulFiles/6mer\\ Seed\\ toxes\\ new.txt \$comp.edgeR.txt > \$comp.edgeR.withTox.txt\n";
     print SH "\tperl \$pipeline/addBLASTresults.pl \$comp.edgeR.withTox.txt \$project.noAdapter.".$type."miRNAs.nr.blast.filtered.txt > \$comp.edgeR.withTox.withMiRNAblast.txt\n";
 print SH "\tperl \$pipeline/addBLASTresults.pl \$comp.edgeR.withTox.withMiRNAblast.txt \$project.noAdapter.".$type."RNAworld.blast.filtered.txt > \$comp.edgeR.withTox.withMiRNAandRNAworld.blast.txt\n";
-print SH "\tperl \$pipeline/truncateBLASTresults.pl \$comp.edgeR.withTox.withMiRNAandRNAworld.blast.txt > \$comp.edgeR.withTox.withMiRNAandRNAworld.blast.trunc.txt\n";
+    print SH "\tperl \$pipeline/truncateBLASTresults.pl \$comp.edgeR.withTox.withMiRNAandRNAworld.blast.txt > \$comp.edgeR.withTox.withMiRNAandRNAworld.blast.trunc.txt\n";
+    print SH "perl \$pipeline/collapseSpecies.pl \$comp.edgeR.withTox.withMiRNAandRNAworld.blast.txt > \$comp.edgeR.seedCollapsed.txt\n";
+    print SH "perl \$pipeline/collapseToxicityBins.pl \$comp.edgeR.seedCollapsed.txt $organism\n";
+    print SH "\n# Expand seed counts for each sample (and the average of any replicates) into lines in a text file, for weblogo.\n";
+    print SH "perl \$pipeline/expandSequencesFromSeedKeyed.pl \$comp.edgeR.seedCollapsed.$organism.seedKeyed.txt\n";
     print SH "done\n";
+    print SH "\n# Run weblogo.\n";
+print SH "module load python/anaconda3.6\n";
+print SH "source activate /projects/p20742/envs/weblogo-py38\n";
+print SH "for f in *seeds..1000.txt\ndo\n";
+print SH "echo \$f\n";
+print SH "\tsample=\$\{f\%\%.txt\}\n";
+print SH "\tweblogo -f \$f -A rna -U probability -F pdf -o \$sample.pdf -c classic\n";
+print SH "done \n";
 }
