@@ -1,4 +1,3 @@
->Wildtype.rep1.seeds 1000
 AAAGAA
 AAAGAA
 AAAGAA

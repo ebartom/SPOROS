@@ -1,4 +1,3 @@
->DicerKO.rep1.seeds 1000
 AAAGUG
 AAAGUG
 AAAGUG
