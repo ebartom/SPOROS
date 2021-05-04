@@ -135,3 +135,4 @@ echo $f
 	sample=${f%%.txt}
 	weblogo -f $f -A rna -U probability -F pdf -o $sample.pdf -c classic
 done 
+source deactivate
