@@ -207,8 +207,10 @@ print SH "source activate /projects/p20742/envs/weblogo-py38\n";
 print SH "for f in *seeds.1000.txt\ndo\n";
 print SH "echo \$f\n";
 print SH "\tsample=\$\{f\%\%.txt\}\n";
-print SH "\tweblogo -f \$f -A rna -U probability -F pdf -o \$sample.pdf -c classic\n";
+#print SH "\tweblogo -f \$f -A rna -U probability -F pdf -o \$sample.pdf --color red G guanine --color orange C cytosine --color blue A adenine --color limegreen U uracil --size large --ylabel Probability --logo-font Helvetica-Extra-Bold --number-interval 1 \n";
+print SH "\tweblogo -f \$f -A rna -U probability -F pdf -o \$sample.pdf --color \"\#CC0000\" G guanine --color \"\#FFB302\" C cytosine --color \"\#0100CC\" A adenine --color \"\#01CC00\" U uracil --size large --ylabel Probability --logo-font Helvetica-Extra-Bold --number-interval 1\n";
 print SH "done \n";
+print SH "source deactivate\n";
 
 
 if ($comparisons ne ""){
@@ -234,11 +236,12 @@ print SH "\tperl \$pipeline/addBLASTresults.pl \$comp.edgeR.withTox.withMiRNAbla
     print SH "perl \$pipeline/expandSequencesFromSeedKeyed.pl \$comp.edgeR.seedCollapsed.$organism.seedKeyed.txt\n";
     print SH "done\n";
     print SH "\n# Run weblogo.\n";
-print SH "module load python/anaconda3.6\n";
-print SH "source activate /projects/p20742/envs/weblogo-py38\n";
-print SH "for f in *seeds..1000.txt\ndo\n";
-print SH "echo \$f\n";
-print SH "\tsample=\$\{f\%\%.txt\}\n";
-print SH "\tweblogo -f \$f -A rna -U probability -F pdf -o \$sample.pdf -c classic\n";
-print SH "done \n";
+    print SH "module load python/anaconda3.6\n";
+    print SH "source activate /projects/p20742/envs/weblogo-py38\n";
+    print SH "for f in *seeds.1000.txt\ndo\n";
+    print SH "echo \$f\n";
+    print SH "\tsample=\$\{f\%\%.txt\}\n";
+    print SH "\tweblogo -f \$f -A rna -U probability -F pdf -o \$sample.pdf --color \"\#CC0000\" G guanine --color \"\#FFB302\" C cytosine --color \"\#0100CC\" A adenine --color \"\#01CC00\" U uracil --size large --ylabel Probability --logo-font Helvetica-Extra-Bold --number-interval 1\n";
+    print SH "done \n";
+    print SH "source deactivate\n";
 }
