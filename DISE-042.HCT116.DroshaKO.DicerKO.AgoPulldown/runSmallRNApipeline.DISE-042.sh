@@ -133,6 +133,6 @@ for f in *seeds.1000.txt
 do
 echo $f
 	sample=${f%%.txt}
-	weblogo -f $f -A rna -U probability -F pdf -o $sample.pdf -c classic
+	weblogo -f $f -A rna -U probability -F pdf -o $sample.pdf --color red G guanine --color orange C cytosine --color blue A adenine --color green U uracil --size large --ylabel Probability --logo-font Helvetica-Extra-Bold --number-interval 1 
 done 
 source deactivate
