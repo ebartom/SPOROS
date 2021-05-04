@@ -201,6 +201,8 @@ print SH "\n# Collapse counts for seed sequences, regardless of RNA species of o
 print SH "perl \$pipeline/collapseToxicityBins.pl \$project.".$type."normCounts.seedCollapsed.txt $organism\n";
 print SH "\n# Expand seed counts for each samples (and the average of any replicates) into lines in a text file, for weblogo.\n";
 print SH "perl \$pipeline/expandSequencesFromSeedKeyed.pl \$project.".$type."normCounts.seedCollapsed.$organism.seedKeyed.txt\n";
+print SH "\n# Expand tox counts for each samples (and the average of any replicates) into lines in a text file, for boxplots.\n";
+print SH "perl \$pipeline/expandToxesFromToxKeyed.pl \$project.".$type."normCounts.seedCollapsed.$organism.toxKeyed.txt\n";
 print SH "\n# Run weblogo.\n";
 print SH "module load python/anaconda3.6\n";
 print SH "source activate /projects/p20742/envs/weblogo-py38\n";
@@ -234,6 +236,8 @@ print SH "\tperl \$pipeline/addBLASTresults.pl \$comp.edgeR.withTox.withMiRNAbla
     print SH "perl \$pipeline/collapseToxicityBins.pl \$comp.edgeR.seedCollapsed.txt $organism\n";
     print SH "\n# Expand seed counts for each sample (and the average of any replicates) into lines in a text file, for weblogo.\n";
     print SH "perl \$pipeline/expandSequencesFromSeedKeyed.pl \$comp.edgeR.seedCollapsed.$organism.seedKeyed.txt\n";
+    print SH "\n# Expand tox counts for each sample (and the average of any replicates) into lines in a text file, for boxplots.\n";
+    print SH "perl \$pipeline/expandToxesFromToxKeyed.pl \$comp.edgeR.seedCollapsed.$organism.toxKeyed.txt\n";
     print SH "done\n";
     print SH "\n# Run weblogo.\n";
     print SH "module load python/anaconda3.6\n";
