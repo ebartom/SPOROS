@@ -29,6 +29,7 @@ my $memory = 50000;
 my $fastq = "";
 my $threads = 24;
 my $type = ""; # This is for UMId / notUMId if sample is pulldown.
+my $sequenceType = "sRNA";
 
 # Read in the command line arguments.
 GetOptions('organism|o=s' => \$organism,
@@ -36,6 +37,7 @@ GetOptions('organism|o=s' => \$organism,
 	   'workdir|w=s' => \$workdir,
 	   'fastqdir|f=s' => \$fastq,
 	   'comparisons|c=s' => \$comparisons,
+	   'sequencetype|st=s' => \$sequenceType,
 	   'barcodes|b=s' => \$barcodes   ) ;
 
 if ($workdir eq ""){
@@ -195,21 +197,22 @@ print SH "done\n";
 print SH "\n# Pull out smaller subsets of these tables for Excel.\n";
 print SH "perl \$pipeline/thresholdNormTotal.pl \$project.noAdapter.".$type."rawCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.txt 20 > \$project.noAdapter.".$type."rawCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.minSum20.txt\n";
 print SH "perl \$pipeline/thresholdNormTotal.pl \$project.noAdapter.".$type."normCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.txt 6 > \$project.noAdapter.".$type."normCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.minSum6.txt\n";
+print SH "\n# This \"normCounts\" file is used as the basis for many further analyses in the Peter Lab.  For simplicity, we will rename it normCounts.\$project.txt \n";
+print SH "ln -s \$project.noAdapter.".$type."normCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.minSum6.txt normCounts.\$project.txt\n";
 print SH "\n# Collapse counts for seed sequences from the same RNA species.\n";
-print SH "perl \$pipeline/collapseSpecies.pl \$project.noAdapter.".$type."normCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.minSum6.txt > \$project.".$type."normCounts.seedCollapsed.txt\n";
+print SH "perl \$pipeline/collapseSpecies.pl normCounts.\$project.txt > collapsed.\$project.txt\n";
 print SH "\n# Collapse counts for seed sequences, regardless of RNA species of origin.\n";
-print SH "perl \$pipeline/collapseToxicityBins.pl \$project.".$type."normCounts.seedCollapsed.txt $organism\n";
+print SH "perl \$pipeline/collapseToxicityBins.pl collapsed.\$project.txt $organism $sequenceType\n";
 print SH "\n# Expand seed counts for each samples (and the average of any replicates) into lines in a text file, for weblogo.\n";
-print SH "perl \$pipeline/expandSequencesFromSeedKeyed.pl \$project.".$type."normCounts.seedCollapsed.$organism.seedKeyed.txt\n";
-print SH "\n# Expand tox counts for each samples (and the average of any replicates) into lines in a text file, for boxplots.\n";
-print SH "perl \$pipeline/expandToxesFromToxKeyed.pl \$project.".$type."normCounts.seedCollapsed.$organism.toxKeyed.txt\n";
+print SH "perl \$pipeline/expandSequencesFromSeedKeyed.pl seedKeyed.$sequenceType.$organism.\$project.txt $sequenceType\n";
+print SH "\n# Expand tox counts for each sample (and the average of any replicates) into lines in a text file, for boxplots.\n";
+print SH "perl \$pipeline/expandToxesFromSeedCollapsed.pl collapsed.\$project.txt $organism $sequenceType $project\n";
 print SH "\n# Run weblogo.\n";
 print SH "module load python/anaconda3.6\n";
 print SH "source activate /projects/p20742/envs/weblogo-py38\n";
-print SH "for f in *seeds.1000.txt\ndo\n";
+print SH "for f in seedAnalysis*.txt\ndo\n";
 print SH "echo \$f\n";
 print SH "\tsample=\$\{f\%\%.txt\}\n";
-#print SH "\tweblogo -f \$f -A rna -U probability -F pdf -o \$sample.pdf --color red G guanine --color orange C cytosine --color blue A adenine --color limegreen U uracil --size large --ylabel Probability --logo-font Helvetica-Extra-Bold --number-interval 1 \n";
 print SH "\tweblogo -f \$f -A rna -U probability -F pdf -o \$sample.pdf --color \"\#CC0000\" G guanine --color \"\#FFB302\" C cytosine --color \"\#0100CC\" A adenine --color \"\#01CC00\" U uracil --size large --ylabel Probability --logo-font Helvetica-Extra-Bold --number-interval 1\n";
 print SH "done \n";
 print SH "source deactivate\n";

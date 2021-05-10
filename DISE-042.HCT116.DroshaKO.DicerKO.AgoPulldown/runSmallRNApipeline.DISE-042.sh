@@ -25,17 +25,23 @@ cd $workdir
 mkdir $workdir/$project.fastq
 
 
-# Barcode files for demultiplexing found.  /projects/b1069/DISE-042.HCT116.DroshaKO.DicerKO.AgoPulldown/HCT116_Drosha_Dicer_plus_HIV_rep_1_J-Dro_3-11_rep1_and_2_S2_R1_001.barcodes.txt /projects/b1069/DISE-042.HCT116.DroshaKO.DicerKO.AgoPulldown/HCT116_Drosha_Dicer_plus_HIV_rep_2_J-Dro_3-F6_rep1_and_2_S3_R1_001.barcodes.txt
+# Barcode files for demultiplexing found.  /projects/b1069/DISE-042.HCT116.DroshaKO.DicerKO.AgoPulldown/HCT116_Drosha_Dicer_plus_HIV_rep_1_Jurkat_rep1_and_2_S1_R1_001.barcodes.txt /projects/b1069/DISE-042.HCT116.DroshaKO.DicerKO.AgoPulldown/HCT116_Drosha_Dicer_plus_HIV_rep_2_J-Dro_3-11_rep1_and_2_S2_R1_001.barcodes.txt /projects/b1069/DISE-042.HCT116.DroshaKO.DicerKO.AgoPulldown/HCT116_Drosha_Dicer_plus_HIV_rep_3_J-Dro_3-F6_rep1_and_2_S3_R1_001.barcodes.txt
 
-# Demultiplexing samples for sample group HCT116_Drosha_Dicer_plus_HIV_rep_1_J-Dro_3-11_rep1_and_2_S2_R1_001
-perl /projects/p20742/tools/bin//trim_galore $fastq/HCT116_Drosha_Dicer_plus_HIV_rep_1_J-Dro_3-11_rep1_and_2_S2_R1_001.fastq.gz --length 12 --dont_gzip
-perl $pipeline/splitFastQwithTable.pl HCT116_Drosha_Dicer_plus_HIV_rep_1_J-Dro_3-11_rep1_and_2_S2_R1_001_trimmed.fq HCT116_Drosha_Dicer_plus_HIV_rep_1_J-Dro_3-11_rep1_and_2_S2_R1_001.barcodes.txt 0
+# Demultiplexing samples for sample group HCT116_Drosha_Dicer_plus_HIV_rep_1_Jurkat_rep1_and_2_S1_R1_001
+perl /projects/p20742/tools/bin//trim_galore $fastq/HCT116_Drosha_Dicer_plus_HIV_rep_1_Jurkat_rep1_and_2_S1_R1_001.fastq.gz --length 12 --dont_gzip
+perl $pipeline/splitFastQwithTable.pl HCT116_Drosha_Dicer_plus_HIV_rep_1_Jurkat_rep1_and_2_S1_R1_001_trimmed.fq HCT116_Drosha_Dicer_plus_HIV_rep_1_Jurkat_rep1_and_2_S1_R1_001.barcodes.txt 0
 mv *.fastq $workdir/$project.fastq/
 gzip $workdir/$project.fastq/*.fastq &
 
-# Demultiplexing samples for sample group HCT116_Drosha_Dicer_plus_HIV_rep_2_J-Dro_3-F6_rep1_and_2_S3_R1_001
-perl /projects/p20742/tools/bin//trim_galore $fastq/HCT116_Drosha_Dicer_plus_HIV_rep_2_J-Dro_3-F6_rep1_and_2_S3_R1_001.fastq.gz --length 12 --dont_gzip
-perl $pipeline/splitFastQwithTable.pl HCT116_Drosha_Dicer_plus_HIV_rep_2_J-Dro_3-F6_rep1_and_2_S3_R1_001_trimmed.fq HCT116_Drosha_Dicer_plus_HIV_rep_2_J-Dro_3-F6_rep1_and_2_S3_R1_001.barcodes.txt 0
+# Demultiplexing samples for sample group HCT116_Drosha_Dicer_plus_HIV_rep_2_J-Dro_3-11_rep1_and_2_S2_R1_001
+perl /projects/p20742/tools/bin//trim_galore $fastq/HCT116_Drosha_Dicer_plus_HIV_rep_2_J-Dro_3-11_rep1_and_2_S2_R1_001.fastq.gz --length 12 --dont_gzip
+perl $pipeline/splitFastQwithTable.pl HCT116_Drosha_Dicer_plus_HIV_rep_2_J-Dro_3-11_rep1_and_2_S2_R1_001_trimmed.fq HCT116_Drosha_Dicer_plus_HIV_rep_2_J-Dro_3-11_rep1_and_2_S2_R1_001.barcodes.txt 0
+mv *.fastq $workdir/$project.fastq/
+gzip $workdir/$project.fastq/*.fastq &
+
+# Demultiplexing samples for sample group HCT116_Drosha_Dicer_plus_HIV_rep_3_J-Dro_3-F6_rep1_and_2_S3_R1_001
+perl /projects/p20742/tools/bin//trim_galore $fastq/HCT116_Drosha_Dicer_plus_HIV_rep_3_J-Dro_3-F6_rep1_and_2_S3_R1_001.fastq.gz --length 12 --dont_gzip
+perl $pipeline/splitFastQwithTable.pl HCT116_Drosha_Dicer_plus_HIV_rep_3_J-Dro_3-F6_rep1_and_2_S3_R1_001_trimmed.fq HCT116_Drosha_Dicer_plus_HIV_rep_3_J-Dro_3-F6_rep1_and_2_S3_R1_001.barcodes.txt 0
 mv *.fastq $workdir/$project.fastq/
 gzip $workdir/$project.fastq/*.fastq &
 wait
@@ -117,22 +123,28 @@ done
 perl $pipeline/thresholdNormTotal.pl $project.noAdapter.notUMId.rawCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.txt 20 > $project.noAdapter.notUMId.rawCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.minSum20.txt
 perl $pipeline/thresholdNormTotal.pl $project.noAdapter.notUMId.normCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.txt 6 > $project.noAdapter.notUMId.normCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.minSum6.txt
 
+# This "normCounts" file is used as the basis for many further analyses in the Peter Lab.  For simplicity, we will rename it normCounts.$project.txt 
+ln -s $project.noAdapter.notUMId.normCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.minSum6.txt normCounts.$project.txt
+
 # Collapse counts for seed sequences from the same RNA species.
-perl $pipeline/collapseSpecies.pl $project.noAdapter.notUMId.normCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.minSum6.txt > $project.notUMId.normCounts.seedCollapsed.txt
+perl $pipeline/collapseSpecies.pl normCounts.$project.txt > collapsed.$project.txt
 
 # Collapse counts for seed sequences, regardless of RNA species of origin.
-perl $pipeline/collapseToxicityBins.pl $project.notUMId.normCounts.seedCollapsed.txt human
+perl $pipeline/collapseToxicityBins.pl collapsed.$project.txt human sRNA
 
 # Expand seed counts for each samples (and the average of any replicates) into lines in a text file, for weblogo.
-perl $pipeline/expandSequencesFromSeedKeyed.pl $project.notUMId.normCounts.seedCollapsed.human.seedKeyed.txt
+perl $pipeline/expandSequencesFromSeedKeyed.pl seedKeyed.sRNA.human.$project.txt sRNA
+
+# Expand tox counts for each sample (and the average of any replicates) into lines in a text file, for boxplots.
+perl $pipeline/expandToxesFromSeedCollapsed.pl collapsed.$project.txt human sRNA DISE-042
 
 # Run weblogo.
 module load python/anaconda3.6
 source activate /projects/p20742/envs/weblogo-py38
-for f in *seeds.1000.txt
+for f in seedAnalysis*.txt
 do
 echo $f
 	sample=${f%%.txt}
-	weblogo -f $f -A rna -U probability -F pdf -o $sample.pdf --color red G guanine --color orange C cytosine --color blue A adenine --color green U uracil --size large --ylabel Probability --logo-font Helvetica-Extra-Bold --number-interval 1 
+	weblogo -f $f -A rna -U probability -F pdf -o $sample.pdf --color "#CC0000" G guanine --color "#FFB302" C cytosine --color "#0100CC" A adenine --color "#01CC00" U uracil --size large --ylabel Probability --logo-font Helvetica-Extra-Bold --number-interval 1
 done 
 source deactivate
