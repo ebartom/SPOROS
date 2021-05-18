@@ -1,1 +1,1 @@
-DISE-042.noAdapter.notUMId.normCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.minSum6.txt
+DISE-042.noAdapter.notUMId.normCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.txt

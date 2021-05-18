@@ -85,14 +85,19 @@ do
 	# notUMId: A six nucleotide Unique Molecular Identifier (UMI) is removed from each read, and the numbers of reads associated with each UMI are summed to generate the raw read count for a particular sample.  For the UMId files, the number of unique UMIs is counted, regardless of how frequently each UMI is seen.
 	(perl $pipeline/processUMIs.pl $sample.justReads.uniqCounts.txt) >& $sample.justReads.uniqCounts.UMI.dist.error.log
 done
+
+# Remove adapter sequences from raw read counts.
+for f in *.justReads.uniqCounts*
+do
+	# Adapter reads are identified as containing the substring GTCCGACGATC followed by 3-5 random nucleotides and removed from analysis.
+	perl $pipeline/deleteAdapterReads.pl $f > $f.noAdapter.txt
+done
+
 # Make tables from the reads.
 # Counts are tabulated for each read and sample and two files are generated.  normCounts has the counts normalized per million reads in the column (sample) sum.  rawCounts has raw un-normalized data.
-perl $pipeline/combineCounts.pl justReads.uniqCounts.notUMId.txt > $project.allreads.notUMId.normCounts.table.txt & 
-perl $pipeline/combineCountsNotNorm.pl justReads.uniqCounts.notUMId.txt > $project.allreads.notUMId.rawCounts.table.txt & 
+perl $pipeline/combineCounts.pl justReads.uniqCounts.notUMId.txt.noAdapter.txt > $project.noAdapter.notUMId.normCounts.table.txt & 
+perl $pipeline/combineCountsNotNorm.pl justReads.uniqCounts.notUMId.txt.noAdapter.txt > $project.noAdapter.notUMId.rawCounts.table.txt & 
 wait
-# Adapter reads are identified as containing the substring GTCCGACGATC followed by 3-5 random nucleotides and removed from analysis.
-perl $pipeline/deleteAdapterReads.pl $project.allreads.notUMId.rawCounts.table.txt > $project.noAdapter.notUMId.rawCounts.table.txt
-perl $pipeline/deleteAdapterReads.pl $project.allreads.notUMId.normCounts.table.txt > $project.noAdapter.notUMId.normCounts.table.txt
 # Make a fasta formatted file from the reads in the normCounts table
 awk ' $1 !~ "Read" {printf ">%s.%d\n%s\n",$1,$NF,$1}' $project.noAdapter.notUMId.normCounts.table.txt > $project.noAdapter.notUMId.fa
 # Reads were blasted (blastn-short) against custom blast databases created from all processed miRNAs and from the most recent RNA world databases, using the sequences appropriate for the organism (human or mouse). 
@@ -124,7 +129,7 @@ perl $pipeline/thresholdNormTotal.pl $project.noAdapter.notUMId.rawCounts.table.
 perl $pipeline/thresholdNormTotal.pl $project.noAdapter.notUMId.normCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.txt 6 > $project.noAdapter.notUMId.normCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.minSum6.txt
 
 # This "normCounts" file is used as the basis for many further analyses in the Peter Lab.  For simplicity, we will rename it normCounts.$project.txt 
-ln -s $project.noAdapter.notUMId.normCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.minSum6.txt normCounts.$project.txt
+ln -s $project.noAdapter.notUMId.normCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.txt normCounts.$project.txt
 
 # Collapse counts for seed sequences from the same RNA species.
 perl $pipeline/collapseSpecies.pl normCounts.$project.txt > collapsed.$project.txt
@@ -133,10 +138,10 @@ perl $pipeline/collapseSpecies.pl normCounts.$project.txt > collapsed.$project.t
 perl $pipeline/collapseToxicityBins.pl collapsed.$project.txt human sRNA
 
 # Expand seed counts for each samples (and the average of any replicates) into lines in a text file, for weblogo.
-perl $pipeline/expandSequencesFromSeedKeyed.pl seedKeyed.sRNA.human.$project.txt sRNA
+perl $pipeline/expandSequencesFromSeedKeyed.pl seedKeyed.sRNA.human.$project.txt sRNA $project
 
 # Expand tox counts for each sample (and the average of any replicates) into lines in a text file, for boxplots.
-perl $pipeline/expandToxesFromSeedCollapsed.pl collapsed.$project.txt human sRNA DISE-042
+perl $pipeline/expandToxesFromSeedCollapsed.pl collapsed.$project.txt human sRNA $project
 
 # Run weblogo.
 module load python/anaconda3.6
