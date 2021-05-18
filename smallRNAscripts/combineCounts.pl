@@ -15,7 +15,7 @@ my $countfiles;
 $countfiles = `ls *.$fileSuffix`;
 my @countfiles = split(/\s+/,$countfiles);
 my $numFiles = scalar(@countfiles);
-my $minSum = 2;
+my $minSum = 0;
 if ($fileSuffix =~ /\.UMId/){$minSum = 1;}
 print STDERR "MinSum: $minSum\n";
 print STDERR "Countfiles:\n@countfiles\n";
