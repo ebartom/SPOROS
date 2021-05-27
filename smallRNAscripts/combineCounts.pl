@@ -5,7 +5,6 @@ use warnings;
 my $fileSuffix = $ARGV[0];
 if ($fileSuffix) {
     print STDERR "$fileSuffix\n";
-    # Great!
 } else {
     $fileSuffix = "justReads.uniqCounts.txt";
     print STDERR "Default suffix: $fileSuffix\n";
@@ -15,7 +14,7 @@ my $countfiles;
 $countfiles = `ls *.$fileSuffix`;
 my @countfiles = split(/\s+/,$countfiles);
 my $numFiles = scalar(@countfiles);
-my $minSum = 0;
+my $minSum = 2;
 if ($fileSuffix =~ /\.UMId/){$minSum = 1;}
 print STDERR "MinSum: $minSum\n";
 print STDERR "Countfiles:\n@countfiles\n";

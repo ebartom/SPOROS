@@ -5,7 +5,6 @@ use warnings;
 my $fileSuffix = $ARGV[0];
 if ($fileSuffix) {
     print STDERR "$fileSuffix\n";
-    # Great!
 } else {
     $fileSuffix = "justReads.uniqCounts.txt";
     print STDERR "Default suffix: $fileSuffix\n";
