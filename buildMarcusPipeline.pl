@@ -156,7 +156,7 @@ if ($barcodes ne ""){
     print SH "done\n";
 }
 print SH "\n# Remove adapter sequences from raw read counts.\n";
-print SH "for f in \*.justReads.uniqCounts*\n";
+print SH "for f in \*.justReads.uniqCounts*txt\n";
 print SH "do\n";
 print SH "\t# Adapter reads are identified as containing the substring GTCCGACGATC followed by 3-5 random nucleotides and removed from analysis.\n";
 print SH "\tperl \$pipeline\/deleteAdapterReads.pl \$f > \$f.noAdapter.txt\n";
@@ -226,7 +226,7 @@ print SH "source deactivate\n";
 if ($comparisons ne ""){
     print SH "\n# Run EdgeR on the comparisons file to identify differentially abundant reads.\n";
     print SH "# (Note that assembly is not actually used here, because these are reads, not gene IDs)\n";
-    print SH "perl -pe \"s\/.justReads.uniqCounts.".$type."txt\/\/g\" \$project.noAdapter.".$type."rawCounts.table.txt | perl -pe \"s/noAdapter.txt//g\" | perl -pe \"s\/\_R1\_001\/\/g\" > \$project.noAdapter.".$type."rawCounts.relabeled.txt\n";
+    print SH "perl -pe \"s\/.justReads.uniqCounts.".$type."txt\/\/g\" \$project.noAdapter.".$type."rawCounts.table.txt | perl -pe \"s/.noAdapter.txt//g\" | perl -pe \"s\/\_R1\_001\/\/g\" > \$project.noAdapter.".$type."rawCounts.relabeled.txt\n";
     print SH "Rscript \$pipeline/runEdgeRrnaSeq.reads.R --countFile=\$project.noAdapter.".$type."rawCounts.relabeled.txt --numCores=$threads --runMDS=1 --filterOff=0 --assembly=hg38.mp\n";
     print SH "Rscript \$pipeline/runEdgeRrnaSeq.reads.R --countFile=\$project.noAdapter.".$type."rawCounts.relabeled.txt --numCores=$threads --runMDS=0 --filterOff=0 --assembly=hg38.mp --comparisonFile=$comparisons\n";
     print SH "\n# Annotate each EdgeR result file with toxicities and blast results.\n";
@@ -238,13 +238,13 @@ if ($comparisons ne ""){
     print SH "\tperl -pe \"s\/\\\"\/\/g\" \$edgeR > \$comp.edgeR.txt\n";
     print SH "\tperl $questMarcus/usefulFiles/addAllToxicities.pl $questMarcus/usefulFiles/6mer\\ Seed\\ toxes\\ new.txt \$comp.edgeR.txt > \$comp.edgeR.withTox.txt\n";
     print SH "\tperl \$pipeline/addBLASTresults.pl \$comp.edgeR.withTox.txt \$project.noAdapter.".$type."miRNAs.nr.blast.filtered.txt > \$comp.edgeR.withTox.withMiRNAblast.txt\n";
-print SH "\tperl \$pipeline/addBLASTresults.pl \$comp.edgeR.withTox.withMiRNAblast.txt \$project.noAdapter.".$type."RNAworld.blast.filtered.txt > \$comp.edgeR.withTox.withMiRNAandRNAworld.blast.txt\n";
+    print SH "\tperl \$pipeline/addBLASTresults.pl \$comp.edgeR.withTox.withMiRNAblast.txt \$project.noAdapter.".$type."RNAworld.blast.filtered.txt > \$comp.edgeR.withTox.withMiRNAandRNAworld.blast.txt\n";
     print SH "\tperl \$pipeline/truncateBLASTresults.pl \$comp.edgeR.withTox.withMiRNAandRNAworld.blast.txt > \$comp.edgeR.withTox.withMiRNAandRNAworld.blast.trunc.txt\n";
     print SH "\n\t# Rename file for simplicity.\n";
-    print SH "\tln -s $\comp.edgeR.withTox.withMiRNAandRNAworld.blast.trunc.txt normCounts.\$comp.edgeR.txt\n";
+    print SH "\tln -s \$comp.edgeR.withTox.withMiRNAandRNAworld.blast.trunc.txt normCounts.\$comp.edgeR.txt\n";
     print SH "\n\t# Collapse counts for seed sequences from the same RNA species.\n";
     print SH "\tperl \$pipeline/collapseSpecies.pl normCounts.\$comp.edgeR.txt > collapsed.\$comp.edgeR.txt\n";
-    print SH "\t\n# Collapse counts for seed sequences, regardless of RNA species of origin.\n";
+    print SH "\n\t# Collapse counts for seed sequences, regardless of RNA species of origin.\n";
     print SH "\tperl \$pipeline/collapseToxicityBins.pl collapsed.\$comp.edgeR.txt $organism $sequenceType\n";
     print SH "\n\t# Expand seed counts for each samples (and the average of any replicates) into lines in a text file, for weblogo.\n";
     print SH "\tperl \$pipeline/expandSequencesFromSeedKeyed.pl seedKeyed.$sequenceType.$organism.\$comp.edgeR.txt $sequenceType\n";
@@ -253,7 +253,7 @@ print SH "\tperl \$pipeline/addBLASTresults.pl \$comp.edgeR.withTox.withMiRNAbla
     print SH "\n\t# Run weblogo.\n";
     print SH "\tmodule load python/anaconda3.6\n";
     print SH "\tsource activate /projects/p20742/envs/weblogo-py38\n";
-    print SH "\tfor f in seedAnalysis*\$comp*.txt\ndo\n";
+    print SH "\tfor f in seedAnalysis*\$comp*.txt\n\tdo\n";
     print SH "\t\techo \$f\n";
     print SH "\t\tsample=\$\{f\%\%.txt\}\n";
     print SH "\t\tweblogo -f \$f -A rna -U probability -F pdf -o \$sample.pdf --color \"\#CC0000\" G guanine --color \"\#FFB302\" C cytosine --color \"\#0100CC\" A adenine --color \"\#01CC00\" U uracil --size large --ylabel Probability --logo-font Helvetica-Extra-Bold --number-interval 1\n";
