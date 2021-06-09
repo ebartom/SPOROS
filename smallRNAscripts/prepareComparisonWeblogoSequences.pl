@@ -42,7 +42,9 @@ while (<IN>){
 	foreach my $direction ("up","dn") {
 	    my $outfile1 = "seedAnalysis.$comparison".$project.".group1.$direction.txt";
 	    my $outfile2 = "seedAnalysis.$comparison".$project.".group2.$direction.txt";
+	    system("rm $outfile1");
 	    system("touch $outfile1");
+	    system("rm $outfile2");
 	    system("touch $outfile2");
 	    foreach my $sample (@group1samples){
 		my $syscommand = "cat seedAnalysis.$sample*$comparison*$direction.1000.txt >> $outfile1";
