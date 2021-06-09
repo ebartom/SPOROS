@@ -10,6 +10,7 @@ my $toxHeader = $ARGV[1];
 my $sequenceType = $ARGV[2];
 my $project = $ARGV[3];
 if ($project ne ""){ $project = "$project.";}
+my $maxNumSequences = 1000;
 
 if ($#ARGV <0){
     # This script takes as input the "collapsed" file, a substring
@@ -59,13 +60,16 @@ while (<IN>){
 		# If there are multiple replicates of the same sample
 		# that end with .rep1 or .rep2, remove the rep suffix
 		# and save the sample names as unique header prefixes.
+		$sampleSumCount{$header} = 0;
 		push(@headerPrefixes,$header);
 		#    print "$header\n";
 	    }
-	    @samples = uniq (@headerPrefixes);
-	    print STDERR "@samples\n";
+#	    @samples = uniq (@headerPrefixes);
+#	    print STDERR "@samples\n";
 	    
 	}
+	@samples = uniq (@headerPrefixes);
+	print STDERR "@samples\n";
     } else {
 	# Now done with processing the headers, moving on to the data.
 	my @data = split(/\t/,$_);
@@ -79,6 +83,7 @@ while (<IN>){
 	    ($sequenceType eq "miRNA" && $miRNAsource ne "noMatch")){
 	    # If the data is the right sequenceType, then add the counts
 	    # to my hash of sample / tox counts.
+#	    print STDERR "$sequenceType\t$miRNAsource\n";
 	    for (my $i=5;$i<=$#data;$i++){
 		if (!exists($counts{$tox}{$headers[$i]})){
 		    $counts{$tox}{$headers[$i]} = $data[$i];
@@ -86,13 +91,21 @@ while (<IN>){
 		    $counts{$tox}{$headers[$i]} += $data[$i];
 		}
 		$sampleSumCount{$headers[$i]} += $data[$i];
-		#	    print "$tox\t$headers[$i]\t$data[$i]\n";
+		# Determine the general name of the sample and add the counts
+		# to the general term, too.
+		my $sample = $headers[$i];
+		$sample =~ s/.rep\d//g;
+#		print STDERR "$sample\t$sampleSumCount{$sample}\t$data[$i]\n";
+		$sampleSumCount{$sample} += $data[$i];
+#		print STDERR "$tox\t$headers[$i]\t$data[$i]\t$counts{$tox}{$headers[$i]}\n";
 	    }
 	} else {
 	    for (my $i=5;$i<=$#data;$i++){
 		# If the sequence isn't the right sequence type, still
 		# initialize the count for the tox,sample pair.
-		$counts{$tox}{$headers[$i]} = 0;
+		if (!exists($counts{$tox}{$headers[$i]})){
+		    $counts{$tox}{$headers[$i]} = 0;
+		}
 	    }
 	}
     }
@@ -129,34 +142,39 @@ foreach my $sample (@samples){
     }
     my $numReps = 0;
     foreach my $replicate (@replicates){
+#	my $toxRepSum = 0;
 	if ($replicate =~ /^$sample/){
 	    $numReps++;
 	    # For each replicate create an output file.
 	    print "Replicate: $replicate\n";
 	    my $outfile = "toxAnalysis.$replicate.$sequenceType.$toxHeader.".$project."txt";
-
+	    my $normFactor = $sampleSumCount{$replicate}/$maxNumSequences;
+#	    print STDERR "$replicate\t$sampleSumCount{$replicate}\t$normFactor\n";
 	    open (OUT,">$outfile");
-	    my $toxRepSum = 0;
 	    foreach my $tox (@toxes){
 		# Retrieve the counts for each tox in each data column.
 		my $count = $counts{$tox}{$replicate};
 		# If replicates of the same sample, sum the counts.
 		$toxSums{$tox}{$sample} += $count;
-		$toxRepSum+= $count;
+#		$toxRepSum+= $count;
 		# Print the count as an integer.
-		my $intCount = sprintf "%.0f", $count;
+		my $intCount = sprintf "%.0f", $count/$normFactor;
+		if ($count > 0){
+#		    print STDERR "$count\t$intCount\t$normFactor\n";
+		}
 		if ($intCount > 0){
-		    # If the count is greater than 0, count a copy of the
+		    # If the count is greater than 0, print a copy of the
 		    # toxicity for each count.
-#		    print STDERR "$replicate\t$tox\t$count\t$intCount\n";
+#		    print STDERR "$replicate\t$tox\t$count\t$intCount\t$normFactor\n";
 		    for(my $i=1;$i<=$intCount;$i++){
 			print OUT "$tox\n";
 		    }
 		}
+		#print STDERR "$toxRepSum\n";
 	    }
 	    close(OUT);
 	    # Print the total counts across the data column.
-	    print "ToxCountSum: $toxRepSum\n";
+	    print "ToxCountSum: $sampleSumCount{$replicate}\n";
 	}
     }
     if ($numReps > 1){
@@ -164,10 +182,12 @@ foreach my $sample (@samples){
 	# an average of the replicates.
 	my $outfile = "toxAnalysis.$sample.avg.$sequenceType.$toxHeader.".$project."txt";
 	open(OUT,">$outfile");
-	print "$sample\tNumReps = $numReps\n";
+	my $normFactor = $sampleSumCount{$sample}/$maxNumSequences;
+	print "$sample\t$sampleSumCount{$sample}\tNumReps = $numReps\tnormFactor=$normFactor\n";
 	foreach my $tox (@toxes){
 	    # Calculate the average count across the replicates and round it.
-	    my $count = ($toxSums{$tox}{$sample})/$numReps;
+#	    my $count = ($toxSums{$tox}{$sample})/$numReps;
+	    my $count = ($toxSums{$tox}{$sample})/$normFactor;
 	    my $intCount = sprintf "%.0f", $count;
 #	    if ($sample eq "DicerKO"){
 #		print STDERR "$sample\t$tox\t$toxSums{$tox}{$sample}\t$numReps\t$count\t$intCount\n";

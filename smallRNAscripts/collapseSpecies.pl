@@ -29,7 +29,7 @@ while(<AN>){
 	@headers = split(/\t/,$_);
 	$dataIndex = 0;
 	foreach my $header (@headers){
-	    if ($header =~ /uniqCounts/){
+	    if (($header =~ /uniqCounts/) || ($header=~ /rep\d/) || ($header =~ /SRR/)){
 		push(@dataIndices,$dataIndex);
 		$numSamples++;
 	    }
@@ -90,6 +90,7 @@ foreach my $dataIndex (@dataIndices){
     $header =~ s/.justReads.uniqCounts.txt//g;
     $header =~ s/.justReads.uniqCounts.notUMId.txt//g;
     $header =~ s/.justReads.uniqCounts.UMId.txt//g;
+    $header =~ s/.noAdapter.txt//g;
     print "\t$header";
 }
 
