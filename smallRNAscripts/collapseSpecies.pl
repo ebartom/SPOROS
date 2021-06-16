@@ -29,7 +29,10 @@ while(<AN>){
 	@headers = split(/\t/,$_);
 	$dataIndex = 0;
 	foreach my $header (@headers){
-	    if (($header =~ /uniqCounts/) || ($header=~ /rep\d/) || ($header =~ /SRR/)){
+	    if ((($header =~ /uniqCounts/) || ($header=~ /rep\d/) || 
+		 ($header =~ /SRR/) || ($header =~ /GSE/) || 
+		 ($header =~ /GSM/))
+		&& ($header !~ /blast/)){
 		push(@dataIndices,$dataIndex);
 		$numSamples++;
 	    }
@@ -47,6 +50,11 @@ while(<AN>){
 	    }
 	    $dataIndex++;
 	}
+	print STDERR "Found $numSamples samples.\n";
+	print STDERR "Found miRNA blast in column $label_miRNAsIndex\n";
+	print STDERR "Found RNAworld blast in column $label_RNAworldIndex\n";
+	print STDERR "Found Human tox in column $humanToxIndex\n";
+	print STDERR "Found Mouse tox in column $mouseToxIndex\n";
 #	print STDERR "@dataIndices\n";
     }else{
 	($read,$seed,@data) = split(/\t/,$_);
@@ -54,10 +62,14 @@ while(<AN>){
        $miRNAlabel = $data[$label_miRNAsIndex-2];
 	if ($miRNAlabel =~ /^([\.\-\_\w]+)\|?/){
 	    $miRNAlabel = $1;
-	}
+#	    print STDERR "miRNA column contains $miRNAlabel\n";
+	} 
 	$RNAworldlabel = $data[$label_RNAworldIndex-2];
 	if ($RNAworldlabel =~ /^([\.\-\_\w]+)\|?/){
 	    $RNAworldlabel = $1;
+#	    print STDERR "RNAworld column contains $RNAworldlabel\n";
+	} elsif ($RNAworldlabel eq ""){
+	    print STDERR "ERR: RNAworld column is empty for $read.\n";
 	}
 	my $species = "$seed\t$miRNAlabel\t$RNAworldlabel";
 	my $toxHuman = $data[$humanToxIndex-2];

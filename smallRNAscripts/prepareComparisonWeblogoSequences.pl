@@ -32,6 +32,7 @@ while (<IN>){
 	my @group2samples;
 	for (my $i=1;$i<=$#data;$i++){
 	    my $sample = $samples{$i};
+	    $sample =~ s/\_/\./g;
 	    if ($data[$i] == 1){
 		push (@group1samples,$sample);
 	    } elsif ($data[$i] == -1){

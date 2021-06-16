@@ -20,7 +20,7 @@ while(<AN>){
     foreach my $datum (@data){
 	if ( $datum =~ /\:/){
 #	    print STDERR "Before: $datum\n";
-	    if ($datum =~ /^([\.\-\_\|\w]+)\:/){
+	    if ($datum =~ /^([\.\-\_\;\|\w]+)\:/){
 		$datum = $1;
 		print "\t$datum";
 #		print STDERR "After: $datum\n";

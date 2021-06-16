@@ -108,6 +108,7 @@ close(IN);
 my @sortedSeeds = sort(keys(%seeds));
 print OUT1 "Seed\t$toxLabel";
 my ($seedHeader,$source1header,$source2header,$tox1header,$tox2header,@dataHeaders) = split(/\t/,$headerLine);
+#print STDERR @dataHeaders;
 foreach my $dataHeader (@dataHeaders){
     print OUT1 "\t$dataHeader";
 }

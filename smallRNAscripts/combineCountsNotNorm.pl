@@ -3,6 +3,7 @@ use strict;
 use warnings;
 
 my $fileSuffix = $ARGV[0];
+my $minSum = $ARGV[1];
 if ($fileSuffix) {
     print STDERR "$fileSuffix\n";
 } else {
@@ -14,8 +15,11 @@ my $countfiles;
 $countfiles = `ls *.$fileSuffix`;
 my @countfiles = split(/\s+/,$countfiles);
 my $numFiles = scalar(@countfiles);
-my $minSum = 2;
-if ($fileSuffix =~ /\.UMId/){$minSum = 1;}
+if ($#ARGV < 1){
+    # Two arguments not specified.  Assume minSum needs a default.
+    $minSum = 2;
+    if ($fileSuffix =~ /\.UMId/){$minSum = 1;}
+} 
 print STDERR "MinSum: $minSum\n";
 print STDERR "Countfiles:\n@countfiles\n";
 
@@ -68,7 +72,7 @@ print "Read";
 foreach my $file (@countfiles){
     print "\t$file";
 }
-print "\tNormTotal\n";
+print "\tRowTotal\n";
 foreach my $read (keys(%reads)){
     if ($reads{$read} >= $minSum){
 	print $read;
