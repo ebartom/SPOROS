@@ -147,7 +147,7 @@ foreach my $sample (@samples){
 	    $numReps++;
 	    # For each replicate create an output file.
 	    print "Replicate: $replicate\n";
-	    my $outfile = "toxAnalysis.$replicate.$sequenceType.$toxHeader.".$project."txt";
+	    my $outfile = "D_toxAnalysis.$replicate.$sequenceType.$toxHeader.".$project."txt";
 	    my $normFactor = $sampleSumCount{$replicate}/$maxNumSequences;
 #	    print STDERR "$replicate\t$sampleSumCount{$replicate}\t$normFactor\n";
 	    open (OUT,">$outfile");
@@ -180,7 +180,7 @@ foreach my $sample (@samples){
     if ($numReps > 1){
 	# If there is more than one replicate of the data column, also print
 	# an average of the replicates.
-	my $outfile = "toxAnalysis.$sample.avg.$sequenceType.$toxHeader.".$project."txt";
+	my $outfile = "D_toxAnalysis.$sample.avg.$sequenceType.$toxHeader.".$project."txt";
 	open(OUT,">$outfile");
 	my $normFactor = $sampleSumCount{$sample}/$maxNumSequences;
 	print "$sample\t$sampleSumCount{$sample}\tNumReps = $numReps\tnormFactor=$normFactor\n";

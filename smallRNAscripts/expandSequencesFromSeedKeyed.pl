@@ -81,8 +81,8 @@ foreach my $sample (@samples){
 	if ($replicate =~ /^$sample/){
 	    $numReps++;
 	    print "Replicate: $replicate\n";
-	    my $outfile1 = "seedAnalysis.$replicate.$sequenceType.".$project."$maxNumSequences.txt";	    
-	    my $outfile2 = "seedLong.$replicate.$sequenceType.".$project."$maxNumSequences.txt";
+	    my $outfile1 = "E_seedAnalysis.$replicate.$sequenceType.".$project."txt";	    
+	    my $outfile2 = "F_seedExpand.$replicate.$sequenceType.".$project."txt";
 	    open (OUT1,">$outfile1");
 	    open (OUT2,">$outfile2");
 	    #	    print OUT ">$replicate.seeds $maxNumSequences\n";
@@ -120,8 +120,8 @@ foreach my $sample (@samples){
 	}
     }
     if ($numReps > 1){
-	my $outfile1 = "seedAnalysis.$sample.avg.$sequenceType.".$project."$maxNumSequences.txt";
-	my $outfile2 = "seedLong.$sample.avg.$sequenceType.".$project."$maxNumSequences.txt";
+	my $outfile1 = "E_seedAnalysis.$sample.avg.$sequenceType.".$project."txt";
+	my $outfile2 = "F_seedExpand.$sample.avg.$sequenceType.".$project."txt";
 	open(OUT1,">$outfile1");
 	open(OUT2,">$outfile2");
 	print OUT2 "Seed\tSample\tSeedID\tPos\tBase\n";

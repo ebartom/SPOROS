@@ -7,6 +7,7 @@ use List::Util qw( min max );
 my $collapsedSpeciesFile = $ARGV[0];
 my $toxHeader = $ARGV[1];
 my $sequenceType = $ARGV[2];
+my $maxTox = 120;
 
 if ($#ARGV <0){
     die "Usage:  $0 <file> <tox type> <sequence type>\n";
@@ -20,12 +21,12 @@ print STDERR "SequenceType = $sequenceType\n";
 my $prefix = basename($collapsedSpeciesFile);
 if ($prefix =~ /^([.\.\-\_\w]+).txt$/){
     $prefix = $1;
-    # Remove the "collapsed" part to shorten the filenames.
-    $prefix =~ s/collapsed.//g;
+    # Remove the "B_collapsed" part to shorten the filenames.
+    $prefix =~ s/B_collapsed.//g;
 }
 print STDERR "$prefix\n";
-my $outfile1 = "seedKeyed.$sequenceType.$toxHeader.$prefix.txt";
-my $outfile2 = "binned.$sequenceType.$toxHeader.$prefix.txt";
+my $outfile1 = "Int_seedKeyed.$sequenceType.$toxHeader.$prefix.txt";
+my $outfile2 = "C_binned.$sequenceType.$toxHeader.$prefix.txt";
 
 open (IN,$collapsedSpeciesFile);;
 open (OUT1,">$outfile1");
@@ -130,13 +131,22 @@ foreach my $dataHeader (@dataHeaders){
 }
 print OUT2 "\n";
 my @sortedToxes = sort {$a <=> $b} (keys(%toxesKeyed));
-foreach my $tox (@sortedToxes){
+
+for (my $tox=1;$tox<=$maxTox;$tox++){
+#foreach my $tox (@sortedToxes){
     print OUT2 "$tox";
-    my @counts = split(/\s/,$toxesKeyed{$tox});
-    foreach my $count (@counts){
-	print OUT2 "\t$count";
+    if (exists($toxesKeyed{$tox})){
+	my @counts = split(/\s/,$toxesKeyed{$tox});
+	foreach my $count (@counts){
+	    print OUT2 "\t$count";
+	}
+	print OUT2 "\n";
+    } else {
+	foreach my $datum (@dataHeaders){
+	    print OUT2 "\t0";
+	}
+	print OUT2 "\n";
     }
-    print OUT2 "\n";
 }
 close(OUT2);
     
