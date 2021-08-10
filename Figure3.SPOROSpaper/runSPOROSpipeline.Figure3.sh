@@ -115,7 +115,7 @@ do
 
 	# Compile the toxAnalysis files into one multi-column summary.
 	# If there are averaged files, use those.
-	if test -f D_toxAnalysis.*avg*; then
+	if ls | grep -q "avg"; then
 		for d in D_toxAnalysis.*.avg.*.txt
 		do
 			echo $d
