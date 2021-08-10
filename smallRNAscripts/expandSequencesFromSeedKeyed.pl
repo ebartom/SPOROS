@@ -5,28 +5,43 @@ use File::Basename;
 use List::MoreUtils qw(uniq);
 use List::Util qw( min max );
 
+
+if ($#ARGV <0){
+    die "Usage:  $0 <file> <sequence type> [project] [group]\n";
+}
+
 my $seedKeyedFile = $ARGV[0];
 my $sequenceType = $ARGV[1];
 my $project = $ARGV[2];
+my $group = $ARGV[3];
 my $maxNumSequences = 1000;
 my $seedLength = 6;
+my @sampleGroup;
 
-if ($project ne ""){ $project = "$project.";}
+my $projectTag = $project;
+if ($project ne ""){ $projectTag = "$project.";}
 
 if ($seedKeyedFile !~ /$sequenceType/){
     print "WARNING: This input file does not seem specific to $sequenceType!\n";
 }
     
-
-if ($#ARGV <0){
-    die "Usage:  $0 <file> <sequence type> [project]\n";
-}
-
 my @seeds;
 my %counts;
 my @samples;
 my %sampleSumCount;
 my @headers;
+my %sampleGroup;
+# If a group has been specified, average that, too.
+if ($group ne ""){ 
+    @sampleGroup = split(/\,/,$group);
+    foreach my $sample (@sampleGroup){
+	$sampleGroup{$sample} = $project;
+    }
+    $sampleSumCount{$project} = 0;
+    print STDERR "$project\t$group\t\t@sampleGroup\n";
+    $projectTag = "";
+}
+
 open (IN, $seedKeyedFile);
 while (<IN>){
     chomp $_;
@@ -51,7 +66,12 @@ while (<IN>){
 	for (my $i=2;$i<=$#data;$i++){
 	    $counts{$seed}{$headers[$i]} = $data[$i];
 	    $sampleSumCount{$headers[$i]} += $data[$i];
-#	    print "$seed\t$headers[$i]\t$data[$i]\n";
+	    if (($group) && exists($sampleGroup{$headers[$i]})){
+		$counts{$seed}{$project} += $data[$i];
+		$sampleSumCount{$project} += $data[$i];
+#		print STDERR "$seed\t$headers[$i]\t$group\t$data[$i]\n";
+	    }
+#	    print STDERR "$seed\t$headers[$i]\t$group\t$data[$i]\n";
 	}
     }
 }
@@ -73,6 +93,9 @@ foreach my $sample (@samples){
     print "Sample: $sample\n";
     foreach my $seed (@seeds){
 	$seedSums{$seed}{$sample} = 0;
+	if ($sampleGroup{$sample}){
+	    $seedSums{$seed}{$project} = 0;
+	}
     }
     my $numReps = 0;
     for (my $i=0;$i<=$#replicates;$i++){
@@ -81,8 +104,8 @@ foreach my $sample (@samples){
 	if ($replicate =~ /^$sample/){
 	    $numReps++;
 	    print "Replicate: $replicate\n";
-	    my $outfile1 = "E_seedAnalysis.$replicate.$sequenceType.".$project."txt";	    
-	    my $outfile2 = "F_seedExpand.$replicate.$sequenceType.".$project."txt";
+	    my $outfile1 = "E_seedAnalysis.$replicate.$sequenceType.".$projectTag."txt";	    
+	    my $outfile2 = "F_seedExpand.$replicate.$sequenceType.".$projectTag."txt";
 	    open (OUT1,">$outfile1");
 	    open (OUT2,">$outfile2");
 	    #	    print OUT ">$replicate.seeds $maxNumSequences\n";
@@ -95,12 +118,23 @@ foreach my $sample (@samples){
 	    } else {
 		$sampleSumCount{$sample} = $sampleSumCount{$replicate};
 	    }
+	    if ($group && $sampleGroup{$replicate}){
+		if (exists($sampleSumCount{$project} )){
+		    $sampleSumCount{$project}+= $sampleSumCount{$replicate};
+		} else {
+		    $sampleSumCount{$project}= $sampleSumCount{$replicate};
+		}
+	    }
 	    my $normFactor = $sampleSumCount/$maxNumSequences;
 	    print STDERR "$replicate \t$normFactor\n";
 	    foreach my $seed (@seeds){
 		my $count = $counts{$seed}{$replicate};
 		my $normCount = sprintf "%.0f", ($count/$normFactor);
 		$seedSums{$seed}{$sample} += $normCount;
+		#		if ($samplegroup{$sample}) {
+		if ($group && $sampleGroup{$replicate}){
+		    $seedSums{$seed}{$project}+=$normCount;
+		}
 		$seedRepSum+= $normCount;
 		if ($normCount > 0){
 #		    print "$seed\t$normCount\n";
@@ -120,8 +154,8 @@ foreach my $sample (@samples){
 	}
     }
     if ($numReps > 1){
-	my $outfile1 = "E_seedAnalysis.$sample.avg.$sequenceType.".$project."txt";
-	my $outfile2 = "F_seedExpand.$sample.avg.$sequenceType.".$project."txt";
+	my $outfile1 = "E_seedAnalysis.$sample.avg.$sequenceType.".$projectTag."txt";
+	my $outfile2 = "F_seedExpand.$sample.avg.$sequenceType.".$projectTag."txt";
 	open(OUT1,">$outfile1");
 	open(OUT2,">$outfile2");
 	print OUT2 "Seed\tSample\tSeedID\tPos\tBase\n";
@@ -144,4 +178,31 @@ foreach my $sample (@samples){
 	close(OUT1);
 	close(OUT2);
     }
+}
+if ($group){
+    # If there is a defined sample group, also print
+    # an average of the replicates.
+    my $outfile1 = "E_seedAnalysis.$project.avg.$sequenceType.".$projectTag."txt";
+    my $outfile2 = "F_seedExpand.$project.avg.$sequenceType.".$projectTag."txt";
+    open(OUT1,">$outfile1");
+    open(OUT2,">$outfile2");
+    print OUT2 "Seed\tSample\tSeedID\tPos\tBase\n";
+    print STDERR "$project\tNumReps = ".($#sampleGroup+1)."\n";
+    my $seedNum=0;
+    foreach my $seed (@seeds){
+	my $count = $seedSums{$seed}{$project}/($#sampleGroup+1);
+	my $intCount = sprintf "%.0f", $count;
+	if ($intCount > 0){
+	    for (my $i=1;$i<=$intCount;$i++){
+		$seedNum++;
+		print OUT1 "$seed\n";
+		for (my $j=1;$j<=$seedLength;$j++){
+		    my $base = substr($seed,$j-1,1);
+		    print OUT2 "$seed\t$project.avg\t$project.$seedNum\t$j\t$base\n";
+		}
+	    }
+	}
+    }
+    close(OUT1);
+    close(OUT2);
 }

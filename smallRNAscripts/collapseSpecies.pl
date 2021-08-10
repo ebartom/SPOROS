@@ -31,12 +31,14 @@ while(<AN>){
 	foreach my $header (@headers){
 	    if ((($header =~ /uniqCounts/) || ($header=~ /rep\d/) || 
 		 ($header =~ /SRR/) || ($header =~ /GSE/) || 
+		 ($header =~ /Rep\d/) || ($header =~ /Group/) ||
+		 ($header =~ /brain/) || 
 		 ($header =~ /GSM/))
 		&& ($header !~ /blast/)){
 		push(@dataIndices,$dataIndex);
 		$numSamples++;
 	    }
-	    if ($header =~ /miRNAs.nr/){
+	    if ($header =~ /miRNA/){
 		$label_miRNAsIndex = $dataIndex;
 	    }
 	    if ($header =~ /RNAworld/){
@@ -93,7 +95,7 @@ while(<AN>){
     }
 }
 
-print "Seed\tTop miRNA Source\tTop RNAworld Source";
+print "Seed\tmiRNA\tRNAworld";
 #my $toxLabel = $headers[$toxIndex];
 print "\tAvg of 3 Human Tox\tAvg of 3 Mouse Tox";
 

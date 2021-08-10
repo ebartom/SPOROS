@@ -11,6 +11,8 @@ my $compfile = $ARGV[0];
 my $dataTable = $ARGV[1];
 my $myComparison = $ARGV[2];
 
+my $keepIndividualSamples = 0;
+
 my @labels;
 my @data;
 my %samples;
@@ -20,7 +22,7 @@ my %group2samples;
 open (CMP,$compfile);
 while (<CMP>){
     chomp $_;
-    if ($_ =~ /^Comparison/){
+    if (($_ =~ /^Comparison/) || ($_ =~ /^Read/)){
 	@labels = split(/\,/,$_);
 	for (my $i=0;$i<=$#labels;$i++){
 	    $samples{$i} = $labels[$i];
@@ -54,6 +56,7 @@ print STDERR "Group2 has $group2size samples:\n@group2samples\n";
 
 my @group1indices;
 my @group2indices;
+my %dataIndices;
 open (IN,$dataTable);
 while (<IN>){
     chomp $_;
@@ -63,14 +66,26 @@ while (<IN>){
 	    my $label = $labels[$i];
 	    if (exists($group1samples{$label})) {
 		push (@group1indices,$i);
+		if ($keepIndividualSamples == 0){
+		    $dataIndices{$i} = 1;
+		}
 	    }
 	    if (exists($group2samples{$label})) {
 		push (@group2indices,$i);
+		if ($keepIndividualSamples == 0){
+		    $dataIndices{$i} = 1;
+		}
 	    }
 	}
 	print STDERR "Group1 columns: @group1indices\n";
 	print STDERR "Group2 columns: @group2indices\n";
-	print $_;
+	#	print $_;
+	print "$labels[0]";
+	for (my $i=1;$i<=$#labels;$i++){
+	    if (!exists($dataIndices{$i})){
+		print "\t$labels[$i]";
+	    }
+	}
 	print "\t$myComparison.Group1\t$myComparison.Group2\n";
     } else {
 	my @data = split(/\t/,$_);
@@ -84,7 +99,13 @@ while (<IN>){
 	}
 	$group1sum = $group1sum / $group1size;
 	$group2sum = $group2sum / $group2size;
-	print "$_\t$group1sum\t$group2sum\n";
+	print "$data[0]";
+	for (my $i=1;$i<=$#data;$i++){
+	    if (!exists($dataIndices{$i})){
+		print "\t$data[$i]";
+	    }
+	}
+	print "\t$group1sum\t$group2sum\n";
 #	print STDERR "$data[0]\t$group1sum\t$group2sum\n";
     }
 }

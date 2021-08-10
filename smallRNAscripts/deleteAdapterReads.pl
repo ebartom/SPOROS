@@ -18,7 +18,9 @@ while(<IN>){
     if (($_ !~ /^Read/) && ($_ !~ /^\t/)){
 	my ($seq,@data) = split(/\t/,$_);
 #	print STDERR "$seq\n";
-	if ($seq =~ /GTCCGACGATC/){
+#	if ($seq =~ /GTCCGACGATC/){
+	# Changed on July 29, 2021
+	if ($seq =~ /TCCGACGATC/){
 #	    	if ($seq =~ /GTCCGACGATC[ACTG]{3,5}$/){
 #	    print STDERR "Found adapter: $seq\n";
 	} else {

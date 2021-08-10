@@ -58,8 +58,9 @@ while(<IN>){
 #	    print DN "\t$labels[$i]";
 	    print DIFF "\t$labels[$i]";
 	}
-        print UP "\tNormTotal";
-#        print DN "\tNormTotal";
+#        print UP "\tNormTotal";
+	#        print DN "\tNormTotal";
+#	print DIFF "\tNormTotal";
 	print UP "\t$labels[-2]";
 	print UP "\t$labels[-1]\n";
 #	print DN "\t$labels[-2]";

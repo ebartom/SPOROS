@@ -33,22 +33,24 @@ mkdir $workdir/$project.fastq
 # Barcode files for demultiplexing found.  /projects/b1069/Figure2.SPOROSpaper/input/HCT116_Drosha_Dicer_rep1.barcodes.txt /projects/b1069/Figure2.SPOROSpaper/input/HCT116_Drosha_Dicer_rep2.barcodes.txt
 
 # Each barcode needs to match a fastq file in the /projects/b1069/Figure2.SPOROSpaper/input/fastq/ directory, with the same file prefix.
-#mkdir $workdir/demultiplex
-#cd $workdir/demultiplex
+mkdir $workdir/demultiplex
+cd $workdir/demultiplex
 
-#cp /projects/b1069/Figure2.SPOROSpaper/input/HCT116_Drosha_Dicer_rep1.barcodes.txt $workdir/demultiplex/ 
-## Demultiplexing samples for sample group HCT116_Drosha_Dicer_rep1
-#perl /projects/p20742/tools/bin//trim_galore $fastq/HCT116_Drosha_Dicer_rep1.fastq.gz --length 12 --dont_gzip -o $workdir/demultiplex/ 
-#perl $pipeline/splitFastQwithTable.pl HCT116_Drosha_Dicer_rep1_trimmed.fq HCT116_Drosha_Dicer_rep1.barcodes.txt 0
-#mv *.fastq $workdir/$project.fastq/
-#gzip $workdir/$project.fastq/*.fastq &
+cp /projects/b1069/Figure2.SPOROSpaper/input/HCT116_Drosha_Dicer_rep1.barcodes.txt $workdir/demultiplex/ 
+# Demultiplexing samples for sample group HCT116_Drosha_Dicer_rep1
+perl /projects/p20742/tools/bin//trim_galore $fastq/HCT116_Drosha_Dicer_rep1.fastq.gz --length 12 --dont_gzip -o $workdir/demultiplex/ 
+perl $pipeline/splitFastQwithTable.pl HCT116_Drosha_Dicer_rep1_trimmed.fq HCT116_Drosha_Dicer_rep1.barcodes.txt 0
+mv *.fastq $workdir/$project.fastq/
+gzip $workdir/$project.fastq/*.fastq &
+gzip $workdir/demultiplex/HCT116_Drosha_Dicer_rep1*.fq &
 
-#cp /projects/b1069/Figure2.SPOROSpaper/input/HCT116_Drosha_Dicer_rep2.barcodes.txt $workdir/demultiplex/ 
-## Demultiplexing samples for sample group HCT116_Drosha_Dicer_rep2
-#perl /projects/p20742/tools/bin//trim_galore $fastq/HCT116_Drosha_Dicer_rep2.fastq.gz --length 12 --dont_gzip -o $workdir/demultiplex/ 
-#perl $pipeline/splitFastQwithTable.pl HCT116_Drosha_Dicer_rep2_trimmed.fq HCT116_Drosha_Dicer_rep2.barcodes.txt 0
-#mv *.fastq $workdir/$project.fastq/
-#gzip $workdir/$project.fastq/*.fastq &
+cp /projects/b1069/Figure2.SPOROSpaper/input/HCT116_Drosha_Dicer_rep2.barcodes.txt $workdir/demultiplex/ 
+# Demultiplexing samples for sample group HCT116_Drosha_Dicer_rep2
+perl /projects/p20742/tools/bin//trim_galore $fastq/HCT116_Drosha_Dicer_rep2.fastq.gz --length 12 --dont_gzip -o $workdir/demultiplex/ 
+perl $pipeline/splitFastQwithTable.pl HCT116_Drosha_Dicer_rep2_trimmed.fq HCT116_Drosha_Dicer_rep2.barcodes.txt 0
+mv *.fastq $workdir/$project.fastq/
+gzip $workdir/$project.fastq/*.fastq &
+gzip $workdir/demultiplex/HCT116_Drosha_Dicer_rep2*.fq &
 wait
 
 # Finished de-multiplexing.
@@ -104,24 +106,22 @@ done
 # Remove adapter sequences from raw read counts.
 for f in *.justReads.uniqCounts*txt
 do
-	# Adapter reads are identified as containing the substring GTCCGACGATC followed by 3-5 random nucleotides and removed from analysis.
+	# Adapter reads are identified as containing the substring TCCGACGATC followed by 3-5 random nucleotides and removed from analysis.
 	perl $pipeline/deleteAdapterReads.pl $f > $f.noAdapter.txt
 done
 
 # Make tables from the reads.
 # Counts are tabulated for each read and sample. The rawCounts table has raw un-normalized data.
-perl $pipeline/combineCountsNotNorm.pl justReads.uniqCounts.notUMId.txt.noAdapter.txt 1 > $project.noAdapter.notUMId.rawCounts.table.txt & 
-wait
+perl $pipeline/combineCountsNotNorm.pl justReads.uniqCounts.notUMId.txt.noAdapter.txt 1 > $project.noAdapter.notUMId.rawCounts.table.txt 
 
 # Using table of raw counts Figure2.noAdapter.notUMId.rawCounts.table.txt for the rest of the pipeline.
 cd $workdir/prelimAnalysis
 tablePrefix=Figure2.noAdapter.notUMId.rawCounts.table
+# Remove reads / rows with a count sum < the number of samples in the table. The last column in the table should be the row total.
+awk  ' $NF >= (NF-2) ' Figure2.noAdapter.notUMId.rawCounts.table.txt > $tablePrefix.minSumN.txt
 
-# Normalize raw read counts to counts per million, removing reads with fewer than 2 counts across all samples.
-perl $pipeline/normalizeRawCountsToCPM.pl Figure2.noAdapter.notUMId.rawCounts.table.txt 2 > $tablePrefix.normCounts.txt
-
-# Make a fasta formatted file from the reads in the normCounts table
-awk ' $1 !~ "Read" {printf ">%s.%d\n%s\n",$1,$NF,$1}' $tablePrefix.normCounts.txt > $tablePrefix.reads.fa
+# Make a fasta formatted file from the reads in the table
+awk ' $1 !~ "Read" {printf ">%s.%d\n%s\n",$1,$NF,$1}' Figure2.noAdapter.notUMId.rawCounts.table.minSumN.txt > $tablePrefix.reads.fa
 
 # Reads are blasted (blastn-short) against custom blast databases created from all processed miRNAs and from the most recent RNA world databases, using the sequences appropriate for the organism (human or mouse). 
 # Blast reads against human miRNAs
@@ -139,50 +139,95 @@ awk ' $3 == 100 && $8 > $7 && $10 > $9 && $4 >= 18 && $9 < 10 ' $tablePrefix.miR
 # RNAworld hits were filtered for at least 95% identity, where the match is within the first 9 bp of the sequencing reads.
 awk ' $3 >= 95 && $8 > $7 && $10 > $9 && $7 < 10'  $tablePrefix.RNAworld.human.blast.txt  > $tablePrefix.RNAworld.blast.filtered.txt
 
+# Remove reads from table that have hits against RNAworld adapter sequences.
+perl $pipeline/removeRNAworldAdapterSeq.pl $tablePrefix.minSumN.txt $tablePrefix.RNAworld.blast.filtered.txt > $tablePrefix.RNAworldClean.txt
+
+# Normalize raw read counts to counts per million, removing reads with fewer than 2 counts across all samples. (Note that reads with fewer reads than the number of samples have already been removed.)
+perl $pipeline/normalizeRawCountsToCPM.pl $tablePrefix.RNAworldClean.txt 2 > $tablePrefix.normCounts.txt
+
  # Add seeds, toxicities, blast hits to normalized counts table.
-perl /projects/b1069//usefulFiles/addAllToxicities.pl /projects/b1069//usefulFiles/6mer\ Seed\ toxes\ new.txt $tablePrefix.normCounts.txt > $tablePrefix.normCounts.withTox.txt
+perl /projects/b1069//usefulFiles/addAllToxicities.pl /projects/b1069//usefulFiles/speciesToxes.txt $tablePrefix.normCounts.txt > $tablePrefix.normCounts.withTox.txt
 perl $pipeline/addBLASTresults.pl $tablePrefix.normCounts.withTox.txt $tablePrefix.miRNAs.nr.blast.filtered.txt > $tablePrefix.normCounts.withTox.withMiRNAblast.txt
 perl $pipeline/addBLASTresults.pl $tablePrefix.normCounts.withTox.withMiRNAblast.txt $tablePrefix.RNAworld.blast.filtered.txt > $tablePrefix.normCounts.withTox.withMiRNAandRNAworld.blast.txt
 perl $pipeline/truncateBLASTresults.pl $tablePrefix.normCounts.withTox.withMiRNAandRNAworld.blast.txt > $tablePrefix.normCounts.withTox.withMiRNAandRNAworld.blast.trunc.txt
 
-# Pull out smaller subsets of these tables for easy manipulation in Excel.
-perl $pipeline/thresholdNormTotal.pl $tablePrefix.normCounts.withTox.withMiRNAandRNAworld.blast.trunc.txt 6 > $tablePrefix.normCounts.withTox.withMiRNAandRNAworld.blast.trunc.minSum6.txt
+ # Add seeds, toxicities, blast hits to raw counts table.
+perl /projects/b1069//usefulFiles/addAllToxicities.pl /projects/b1069//usefulFiles/speciesToxes.txt $tablePrefix.RNAworldClean.txt > $tablePrefix.withTox.txt
+perl $pipeline/addBLASTresults.pl $tablePrefix.withTox.txt $tablePrefix.miRNAs.nr.blast.filtered.txt > $tablePrefix.withTox.withMiRNAblast.txt
+perl $pipeline/addBLASTresults.pl $tablePrefix.withTox.withMiRNAblast.txt $tablePrefix.RNAworld.blast.filtered.txt > $tablePrefix.withTox.withMiRNAandRNAworld.blast.txt
+perl $pipeline/truncateBLASTresults.pl $tablePrefix.withTox.withMiRNAandRNAworld.blast.txt > $tablePrefix.withTox.withMiRNAandRNAworld.blast.trunc.txt
 
 # This "normCounts" file is used as the basis for many further analyses in the Peter Lab, and is the first of the official output files for the SPOROS pipelien.  For simplicity, we will rename it A_normCounts.$project.txt and put it in a new directory with the other output files.
 mkdir $workdir/totalCounts
-cp $workdir/prelimAnalysis/$tablePrefix.normCounts.withTox.withMiRNAandRNAworld.blast.trunc.txt $workdir/totalCounts/A_normCounts.$project.txt
+perl -pe "s/Figure2.noAdapter.notUMId.rawCounts.table.RNAworld.blast.filtered.txt/RNAworld/g"  $workdir/prelimAnalysis/$tablePrefix.normCounts.withTox.withMiRNAandRNAworld.blast.trunc.txt | perl -pe "s/Figure2.noAdapter.notUMId.rawCounts.table.miRNAs.nr.blast.filtered.txt/miRNA/g" > $workdir/totalCounts/A_normCounts.$project.txt
+# Also copy over rawCounts version.
+perl -pe "s/Figure2.noAdapter.notUMId.rawCounts.table.RNAworld.blast.filtered.txt/RNAworld/g"  $workdir/prelimAnalysis/$tablePrefix.withTox.withMiRNAandRNAworld.blast.trunc.txt | perl -pe "s/Figure2.noAdapter.notUMId.rawCounts.table.miRNAs.nr.blast.filtered.txt/miRNA/g" > $workdir/totalCounts/A_rawCounts.$project.txt
 cd $workdir/totalCounts
 
 # Collapse counts for seed sequences from the same RNA species.
 perl $pipeline/collapseSpecies.pl A_normCounts.$project.txt > B_collapsed.$project.txt
 
-# Collapse counts for seed sequences, regardless of RNA species of origin, for all sRNA.
-perl $pipeline/collapseToxicityBins.pl B_collapsed.$project.txt human sRNA
-# This generates files C_binned.sRNA.human.$project.txt and intermediary file Int_seedKeyed.sRNA.human.$project.txt.
-
-# Expand tox counts for each sample (and the average of any replicates) into lines in a text file, for boxplots.
-perl $pipeline/expandToxesFromSeedCollapsed.pl B_collapsed.$project.txt human sRNA $project
-# This generates files that start with the word D_toxAnalysis, one for each sample and average of replicate samples.
-
-# Expand seed counts for each samples (and the average of any replicates) into lines in a text file, for weblogo.
-perl $pipeline/expandSequencesFromSeedKeyed.pl Int_seedKeyed.sRNA.human.$project.txt sRNA $project
-# This generates files that start with the words E_seedAnalysis and seedLong, one for each sample and average of replicate samples.
-
-# Run weblogo.
-module load python/anaconda3.6
-source activate /projects/p20742/envs/weblogo-py38
-for f in E_seedAnalysis*.txt
+# Split the analysis by sequence type and generate a directory for each and run separately.
+for seqtype in sRNA miRNA
 do
-	echo $f
-	sample=${f%%.txt}
-	weblogo -f $f -A rna --show-xaxis NO --show-yaxis NO -U probability -F pdf -o $sample.pdf \
-		--color "#CC0000" G guanine --color "#FFB302" C cytosine --color "#0100CC" A adenine --color "#01CC00" U uracil \
-		--size large --logo-font Helvetica-Extra-Bold --ylabel Probability --number-interval 1
-	weblogo -f $f -A rna --show-xaxis NO --show-yaxis NO -U probability -F png_print -o $sample.png \
-		--color "#CC0000" G guanine --color "#FFB302" C cytosine --color "#0100CC" A adenine --color "#01CC00" U uracil \
-		--size large --logo-font Helvetica-Extra-Bold --ylabel Probability --number-interval 1
-done 
-source deactivate
+	mkdir $workdir/totalCounts/$seqtype
+	cd $workdir/totalCounts/$seqtype
+
+	# Collapse counts for seed sequences, regardless of RNA species of origin, for all $seqtype.
+	perl $pipeline/collapseToxicityBins.pl ../B_collapsed.$project.txt human $seqtype
+	# This generates files C_binned.$seqtype.human.$project.txt and intermediary file Int_seedKeyed.$seqtype.human.$project.txt.
+
+	# Expand tox counts for each sample (and the average of any replicates) into lines in a text file, for boxplots.
+	perl $pipeline/expandToxesFromSeedCollapsed.pl ../B_collapsed.$project.txt human $seqtype $project
+	# This generates files that start with the word D_toxAnalysis, one for each sample and average of replicate samples.
+
+	# Expand seed counts for each samples (and the average of any replicates) into lines in a text file, for weblogo.
+	perl $pipeline/expandSequencesFromSeedKeyed.pl Int_seedKeyed.$seqtype.human.$project.txt $seqtype $project
+	# This generates files that start with the words E_seedAnalysis and F_seedExpand, one for each sample and average of replicate samples.
+
+	# Run weblogo.
+	module load python/anaconda3.6
+	source activate /projects/p20742/envs/weblogo-py38
+	for f in E_seedAnalysis*.txt
+	do
+		echo $f
+		sample=${f%%.txt}
+		weblogo -f $f -A rna --show-xaxis NO --show-yaxis NO -U probability -F png_print -o $sample.png \
+			--color "#CC0000" G guanine --color "#FFB302" C cytosine --color "#0100CC" A adenine --color "#01CC00" U uracil \
+			--size large --logo-font Helvetica-Extra-Bold --ylabel Probability --number-interval 1
+		done 
+	source deactivate
+
+	# Compile the toxAnalysis files into one multi-column summary.
+	# If there are averaged files, use those.
+	if ls | grep -q "avg"; then
+		for d in D_toxAnalysis.*.avg.*.txt
+		do
+			echo $d
+			sample=${d##D_toxAnalysis.}
+			sample=${sample%%.human.Figure2.txt}
+			echo $sample | cat > test.$sample.tox
+			cat $d >> test.$sample.tox
+		done
+	# If there are no averaged files, just use all of the individual ones.
+	else
+		for d in D_toxAnalysis.*.txt
+		do
+			echo $d
+			sample=${d##D_toxAnalysis.}
+			sample=${sample%%.human.Figure2.txt}
+			echo $sample | cat > test.$sample.tox
+			cat $d >> test.$sample.tox
+		done
+	fi
+	paste test.*.tox > D_toxAnalysis.combined.$seqtype.txt
+	rm test.*.tox
+
+	# Plot a very basic box plot summarizing the tox distributions in the different samples.
+	Rscript /projects/b1069/smallRNAscripts/plotToxBoxPlot.R --toxFile=D_toxAnalysis.combined.$seqtype.txt
+
+	# Analysis done for $seqtype.
+	done
 date
 
 # Analysis done for total counts.

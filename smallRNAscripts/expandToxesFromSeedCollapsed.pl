@@ -9,14 +9,16 @@ my $seedCollapsedFile = $ARGV[0];
 my $toxHeader = $ARGV[1];
 my $sequenceType = $ARGV[2];
 my $project = $ARGV[3];
-if ($project ne ""){ $project = "$project.";}
+my $group = $ARGV[4];
 my $maxNumSequences = 1000;
+my $projectTag = $project;
+if ($project ne ""){ $projectTag = "$project.";}
 
 if ($#ARGV <0){
     # This script takes as input the "collapsed" file, a substring
     # to identify the right toxicity / viability column, a sequence
     # type (sRNA / miRNA) and optionally a project ID.
-    die "Usage:  $0 <file> <tox type> <sequence type> [project]\n";
+    die "Usage:  $0 <file> <tox type> <sequence type> [project] [group]\n";
 }
 
 # Generate some empty variables.
@@ -28,6 +30,18 @@ my @headers;
 my %toxes;
 my $toxIndex = 0;
 my $dataIndex = 0;
+my @sampleGroup;
+
+my %sampleGroup;
+# If a group has been specified, average that, too.
+if ($group ne ""){ 
+    @sampleGroup = split(/\,/,$group);
+    foreach my $sample (@sampleGroup){
+	$sampleGroup{$sample} = $project;
+    }
+    print STDERR "$project\t$group\t@sampleGroup\n";
+    $projectTag = "";
+}
 
 # Read in the seed collapsed file, one line at a time.
 open (IN, $seedCollapsedFile);
@@ -47,7 +61,8 @@ while (<IN>){
 	    # When you identify a header that contains the toxHeader
 	    # substring, then save its location.
 	    # (The tox header can be all lower case and it will still match)
-	    if (($header =~ /$toxHeader/) || ($lcHeader =~ /$toxHeader/)){
+	    if ((($header =~ /$toxHeader/) || ($lcHeader =~ /$toxHeader/)) &&
+		($lcHeader =~ /tox/)) {
 		$toxIndex = $i;
 		print STDERR "$toxHeader Toxicity is in column $toxIndex\n";
 	    }
@@ -56,6 +71,9 @@ while (<IN>){
 	    if ($i > 4){
 		# Now in data header space.
 		$sampleSumCount{$header} = 0;
+		if ($group){
+		    $sampleSumCount{$project} = 0;
+		}
 		$header =~ s/\.rep\d//g;
 		# If there are multiple replicates of the same sample
 		# that end with .rep1 or .rep2, remove the rep suffix
@@ -91,6 +109,9 @@ while (<IN>){
 		    $counts{$tox}{$headers[$i]} += $data[$i];
 		}
 		$sampleSumCount{$headers[$i]} += $data[$i];
+		if ($group && exists($sampleGroup{$headers[$i]})){
+		    $sampleSumCount{$project} += $data[$i];
+		}
 		# Determine the general name of the sample and add the counts
 		# to the general term, too.
 		my $sample = $headers[$i];
@@ -112,6 +133,8 @@ while (<IN>){
 }
 # After iterating through every line in the input table, every sample, tox pair
 # should be recorded in the counts hash table.
+
+
 
 my @replicates;
 for (my $i=5;$i<=$#headers;$i++){
@@ -135,10 +158,17 @@ print STDERR "Toxes: @toxes\n";
 print STDERR "Num Unique Toxes: $#toxes\n";
 print STDERR "Samples: @samples\n";
 print STDERR "Replicates: @replicates\n";
+if ($group){
+    print STDERR "Project: $project\n";
+    print STDERR "Sample group: @sampleGroup\n";
+}
 foreach my $sample (@samples){
     print "Sample: $sample\n";
     foreach my $tox (@toxes){
 	$toxSums{$tox}{$sample} = 0;
+	if ($group && ($group =~ /$sample/)){
+	    $toxSums{$tox}{$project} = 0;
+	}
     }
     my $numReps = 0;
     foreach my $replicate (@replicates){
@@ -147,7 +177,7 @@ foreach my $sample (@samples){
 	    $numReps++;
 	    # For each replicate create an output file.
 	    print "Replicate: $replicate\n";
-	    my $outfile = "D_toxAnalysis.$replicate.$sequenceType.$toxHeader.".$project."txt";
+	    my $outfile = "D_toxAnalysis.$replicate.$sequenceType.$toxHeader.".$projectTag."txt";
 	    my $normFactor = $sampleSumCount{$replicate}/$maxNumSequences;
 #	    print STDERR "$replicate\t$sampleSumCount{$replicate}\t$normFactor\n";
 	    open (OUT,">$outfile");
@@ -156,6 +186,9 @@ foreach my $sample (@samples){
 		my $count = $counts{$tox}{$replicate};
 		# If replicates of the same sample, sum the counts.
 		$toxSums{$tox}{$sample} += $count;
+		if ($group && ($group =~ /$sample/)){
+		    $toxSums{$tox}{$project} += $count;
+		}
 #		$toxRepSum+= $count;
 		# Print the count as an integer.
 		my $intCount = sprintf "%.0f", $count/$normFactor;
@@ -180,7 +213,7 @@ foreach my $sample (@samples){
     if ($numReps > 1){
 	# If there is more than one replicate of the data column, also print
 	# an average of the replicates.
-	my $outfile = "D_toxAnalysis.$sample.avg.$sequenceType.$toxHeader.".$project."txt";
+	my $outfile = "D_toxAnalysis.$sample.avg.$sequenceType.$toxHeader.".$projectTag."txt";
 	open(OUT,">$outfile");
 	my $normFactor = $sampleSumCount{$sample}/$maxNumSequences;
 	print "$sample\t$sampleSumCount{$sample}\tNumReps = $numReps\tnormFactor=$normFactor\n";
@@ -202,3 +235,28 @@ foreach my $sample (@samples){
 	close(OUT);
     }
 }
+if ($group){
+    # If there is a defined sample group, also print
+    # an average of the replicates.
+    my $outfile = "D_toxAnalysis.$project.avg.$sequenceType.$toxHeader.".$projectTag."txt";
+    open(OUT,">$outfile");
+    my $normFactor = $sampleSumCount{$project}/$maxNumSequences;
+    print "$project\t$sampleSumCount{$project}\tNumReps = ".($#sampleGroup+1)."\tnormFactor=$normFactor\n";
+    foreach my $tox (@toxes){
+	    # Calculate the average count across the replicates and round it.
+	#	    my $count = ($toxSums{$tox}{$sample})/$numReps;
+	my $count = ($toxSums{$tox}{$project})/$normFactor;
+	    my $intCount = sprintf "%.0f", $count;
+	#	    if ($sample eq "DicerKO"){
+	#		print STDERR "$sample\t$tox\t$toxSums{$tox}{$sample}\t$numReps\t$count\t$intCount\n";
+	#	    }
+	if ($intCount > 0){
+	    # For each count, print a copy of the toxicity.
+	    for (my $i=1;$i<=$intCount;$i++){
+		print OUT "$tox\n";
+	    }
+	}
+    }
+    close(OUT);
+}
+

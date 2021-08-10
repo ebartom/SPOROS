@@ -56,10 +56,11 @@ while(<IN>){
 	foreach my $header (@headers){
 	    #	    print STDERR "$header\n";
 	    my $lcHeader = lc $header;
-	    if ($lcHeader =~ /$lcToxHeader/){
-#		print "$toxHeader\t$header\n";
+	    if (($lcHeader =~ /$lcToxHeader/) && ($lcHeader =~ /tox/)){
+		#		print "$toxHeader\t$header\n";
 		$toxIndex = $dataIndex;
 		$toxLabel = $header;
+		print STDERR "The toxicity data is labeled $header, in column $toxIndex\n";
 	    }
 	    $dataIndex++;
 	}
