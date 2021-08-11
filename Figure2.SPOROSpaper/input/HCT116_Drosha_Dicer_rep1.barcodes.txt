@@ -1,0 +1,4 @@
+barcode	sample
+CTGACA	Wildtype.rep1
+ACTAGC	DroshaKO.rep1
+GTACGT	DicerKO.rep1
