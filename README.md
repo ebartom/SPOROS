@@ -2,7 +2,7 @@
 
 MicroRNAs (or miRNAs) are 18-22 nucleotide long noncoding short (s)RNAs that play key roles in cellular biology, suppressing gene expression by targeting the 3' untranslated region of target mRNAs. miRNAs are typically studied by sequencing short RNAs from a biological sample and then aligning them to a reference genome.  However, since the core function of a miRNA is mediated by the seed sequence located in positions 2-7 of the miRNA guide strand, we wished to group miRNAs by their 6mer seed rather than by evolutionary history and miRNA family.  To this end, **we have created a read-based analysis pipeline for analyzing short RNA sequencing data, called SPOROS**.
 
-We have previously shown that G-rich 6mer seed sequences can kill cells by targeting C-rich 6mer seed matches located in genes that are critical for cell survival. This results in induction of Death Induced by Survival gene Elimination (DISE), also referred to as 6mer Seed Toxicity. For much more detail on 6mer seed toxicity and DISE, we refer you to prior publications from our group.
+We have previously shown that G-rich 6mer seed sequences can kill cells by targeting C-rich 6mer seed matches located in genes that are critical for cell survival. This results in induction of Death Induced by Survival gene Elimination (DISE), also referred to as 6mer Seed Toxicity. For much more detail on 6mer seed toxicity and DISE, we refer you to prior publications.
 
 * W. Putzbach, Q.Q. Gao, M. Patel, S. van Dongen, A. Haluck-Kangas, A.A. Sarshad, E. Bartom, K.Y. Kim, D.M. Scholtens, M. Hafner, J.C. Zhao, A.E. Murmann, M.E. Peter, [Many si/shRNAs can kill cancer cells by targeting multiple survival genes through an off-target mechanism](https://doi.org/10.7554/eLife.29702), _eLife_ 6 (2017) e29702.
 
@@ -90,7 +90,7 @@ Together, these analyses can provide insight into the shift in the contents of t
 
 ## Brain samples, from patients with or without dementia
 
-The second example uses publicly available data from an Alzheimer's paper, downloaded from the GEO database ([GSE63501](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE63501)).  This is a small RNA dataset, capturing all small RNAs present in these cells, not specifically bound by the RISC.  To download the data and compile it into a table, we used a custom script, [processDownloadedData.sh](https://github.com/ebartom/SPOROS/blob/main/Figure3.SPOROSpaper/input/processDownloadedData.sh).  The resulting table, is fed into SPOROS as input, with the following command:
+The second example uses publicly available data from an Alzheimer's paper, downloaded from the GEO database ([GSE63501](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE63501)).  This is a small RNA dataset, capturing all small RNAs present in these cells, not specifically bound by the RISC.  To download the data and compile it into a table, we used a custom script, [processDownloadedData.sh](https://github.com/ebartom/SPOROS/blob/main/Figure3.SPOROSpaper/input/processDownloadedData.sh).  The resulting table is fed into SPOROS as input, with the following command:
 
 ~~~
 perl /projects/b1069/buildSPOROSpipeline.pl \
