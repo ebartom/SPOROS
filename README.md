@@ -90,7 +90,7 @@ Together, these analyses can provide insight into the shift in the contents of t
 
 ## Brain samples, from patients with or without dementia
 
-The second example uses publicly available data from an Alzheimer's paper, downloaded from the GEO database ([GSE63501](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE63501)).  This is a small RNA dataset, capturing all small RNAs present in these cells, not specifically bound by the RISC.  To download the data and compile it into a table, we used a custom script, [processDownloadedData.sh](https://github.com/ebartom/Sporos/blob/main/Figure2.SPOROSpaper/processDownloadedData.sh).  The resulting table, is fed into SPOROS as input, with the following command:
+The second example uses publicly available data from an Alzheimer's paper, downloaded from the GEO database ([GSE63501](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE63501)).  This is a small RNA dataset, capturing all small RNAs present in these cells, not specifically bound by the RISC.  To download the data and compile it into a table, we used a custom script, [processDownloadedData.sh](https://github.com/ebartom/Sporos/blob/main/Figure3.SPOROSpaper/processDownloadedData.sh).  The resulting table, is fed into SPOROS as input, with the following command:
 
 ~~~
 perl /projects/b1069/buildSPOROSpipeline.pl \
