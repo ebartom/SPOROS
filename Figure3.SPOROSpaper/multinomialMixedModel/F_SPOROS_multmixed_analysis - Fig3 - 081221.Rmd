@@ -1,0 +1,258 @@
+---
+title: SPOROS pipeline analysis of seed composition data using multinomial mixed models
+output: 
+  html_document:
+    number_sections: TRUE
+graphics: yes
+---
+
+```{r setup, include=FALSE}
+library("knitr")
+library(SASmarkdown)
+library("ggplot2")
+library("ggnewscale")
+library("tidyverse")
+library("readxl")
+
+options(round = 4)
+options(stringsAsFactors = FALSE)
+
+opts_chunk$set(echo = TRUE, include=TRUE,
+               comment = "  ", prompt=TRUE,  
+               warning = FALSE, message = FALSE,
+               fig.width = 8.5, fig.asp=.8) 
+
+# set path where the data for SAS will be saved to 
+datapath <- "G:\\PeterM_XXX\\Analysis\\Data\\MethodsPaper\\"
+plotpath <- "G:\\PeterM_XXX\\Analysis\\Code\\MethodsPaper\\"
+
+```
+
+
+# Read in Output F from GitHub
+
+```{r}
+## read in raw data from GitHub
+
+f.down <- "https://raw.githubusercontent.com/ebartom/SPOROS/main/Figure3.SPOROSpaper/differential/ADnTPDvsCtrl/adjp/sRNA/F_seedExpand.Delta.sRNA.dn.txt"
+f.up <- "https://raw.githubusercontent.com/ebartom/SPOROS/main/Figure3.SPOROSpaper/differential/ADnTPDvsCtrl/adjp/sRNA/F_seedExpand.Delta.sRNA.up.txt"
+
+down <- read.table(f.down, header=TRUE, sep="\t")
+up <- read.table(f.up, header=TRUE, sep="\t")
+
+
+```
+
+
+
+```{r include=FALSE}
+# add sample name to each dataset
+up$Sample <- "Up"
+down$Sample <- "Down"
+
+# if needed, update SeedID to make it unique across samples
+if(any(up$SeedID %in% down$SeedID)){
+  up$SeedID <- paste("Up", up$SeedID, sep=".")
+  down$SeedID <- paste("Down", down$SeedID, sep=".")
+}
+
+# combine data
+dataCombined <- rbind(up, down) %>% as.data.frame
+
+
+```
+
+There are `r (up %>% nrow)/6` seeds in Up data.
+
+There are `r (down %>% nrow)/6` seeds in Down data.
+
+There are `r length(unique(dataCombined$SeedID))` seeds in the combined data set.
+
+
+Example of each data set:
+```{r }
+# look at each file to check that data were read and combined correctly
+up %>% head
+down %>% head
+dataCombined %>% head
+dataCombined %>% tail
+
+```
+
+Do the counts match? 
+```{r}
+# check total seeds/id's
+(nrow(up)/6 + nrow(down)/6 ==
+   length(unique(dataCombined$SeedID)))
+
+```
+
+
+
+# Save the data
+
+```{r echo=FALSE, include=FALSE}
+### save data for SAS use
+fileOut <- paste(paste(datapath, "data.sas.Fig3", sep=""),
+                 Sys.Date(), "csv", sep=".")
+
+write.table(x = dataCombined,
+            file = fileOut,
+            sep = ",",
+            quote = FALSE,
+            row.names = FALSE)
+```
+
+
+Data saved for SAS analyses into:
+```{r echo=FALSE}
+fileOut
+```
+
+# SAS Analysis using PROC GLIMMIX
+
+```{r include=FALSE}
+# https://www.r-bloggers.com/2019/09/create-rmarkdown-document-with-sas-code-and-output-sas-engine/
+
+saspath <- "C:/Program Files/SASHome/SASFoundation/9.4/sas.exe"
+sasopts <- "-nosplash -nocenter"
+knitr::opts_chunk$set(
+  comment=NA,
+  echo=TRUE)
+```
+
+
+```{r, engine="sashtml", engine.path=saspath, engine.opts=sasopts, collectcode=TRUE}
+* update the path in the INFILE statement to match datapath above;
+* note that sas uses single backslash in paths, e.g. "C:\sasdata";
+
+data seedlong;
+informat seed $6. sample $20. seedid $30.;
+infile "G:\\PeterM_XXX\\Analysis\\Data\\MethodsPaper\\data.sas.Fig3.2021-08-12.csv" 
+  dlm="," firstobs=2;
+input Seed $ sample $ seedid $ pos base $ ;
+run;
+
+  
+* note: if the model has convergence issues, different estimation can be used; 
+*       "method=laplace" was used in Fig. 3 data analysis;
+*       "method = rmpl" was used in Fig. 2 data analysis;  
+proc glimmix data=seedlong outdesign = xx method=laplace;
+class seed seedid sample(ref="Down") pos base(ref="A");
+model base = sample pos sample*pos /dist=multinomial link=glogit s or(label) ddfm=bw;
+random intercept/ subject = seedid group=base type=chol;
+store gmxres;
+run;
+```
+
+```{r, engine="sashtml", engine.path=saspath, engine.opts=sasopts, collectcode=TRUE, results="hide"}
+
+proc plm restore=gmxres noclprint plots=none;
+lsmeans sample/ilink oddsratio adj=tukey cl e;
+slice sample*pos/sliceby=pos diff oddsratio adj=tukey cl;
+ods output slicediffs= sampleposdiffs diffs= samplediffs;
+run;
+
+```
+
+```{r, engine="sashtml", engine.path=saspath, engine.opts=sasopts, collectcode=TRUE}
+proc sort data=sampleposdiffs;
+by sample slice base;
+
+proc print data=sampleposdiffs;
+var sample _sample slice base OddsRatio AdjLowerOR AdjUpperOR Adjp;
+run;      
+```
+
+```{r, engine="sashtml", engine.path=saspath, engine.opts=sasopts, collectcode=TRUE}
+* update the path in the OUTFILE statement below to match datapath;
+* note that sas uses single backslash for paths, e.g. "C:\sasdata";
+
+proc export data=work.sampleposdiffs
+  outfile="G:\PeterM_XXX\Analysis\Data\MethodsPaper\F_OREstimates_Fig3_081221.xlsx"
+  dbms=excel replace;
+  sheet="OR Position";
+run;
+```
+
+
+
+
+```{r include=FALSE}
+# read in the OR estimates data file that was output by PROC EXPORT above
+orest <- read_excel(paste(datapath, "F_OREstimates_Fig3_081221.xlsx", sep=""))
+
+# change options to allow better pvalue formatting for small p
+scipen0 <- getOption("scipen")
+options(scipen = 10000000)
+
+# add additional columns used in plotting
+orest <- orest %>% 
+  filter(`_sample` == "Down") %>%
+  mutate(pos = Slice,
+         pos2 = substr(pos, 5,5),
+         OR = ifelse(OddsRatio>1, OddsRatio, 1/OddsRatio),
+         iUp = ifelse(OddsRatio > 1, ">A", "<A"),
+         up = ifelse(OddsRatio > 1, base, "A"),
+         base2 = factor(base), 
+         base2 = factor(base2, levels = rev(levels(base2))),
+         orlbl = paste(format(OR, digits=2),
+                        "\n(", format.pval(Adjp, eps=0.0001, digits=2), ")", 
+                        sep=""),
+         # boldpval = ifelse(Adjp < .05, "bold", "plain"),
+         psignif = ifelse(Adjp < .05, "signif", "notsignif"))
+
+# reset significant digits display option
+options(scipen = scipen0)
+
+# create separate data.frames for plotting
+dataplot1 <- orest %>% 
+  filter(sample == "Up") 
+
+
+```
+
+
+# Up vs. Down
+
+
+```{r, echo=FALSE, fig.width=11, fig.height=8.5}
+maxsize <- dataplot1$OR %>% max
+ggplot(data=dataplot1, aes(pos2, base2)) + 
+  geom_point(aes(size = OR, color = up)) +
+  scale_color_manual(values = c("A" = "#0100CC",
+                                "C" = "#FFB302",
+                                "G" = "#CC0000",
+                                "U" = "#01CC00"), 
+                     name=" ",
+                     guide = guide_legend(override.aes = list(size = 5))) +
+  new_scale_color() +
+  geom_point(aes(size = maxsize, color = psignif), shape=21, stroke=2) +
+  scale_color_manual(values = c("signif" = "black",
+                                "notsignif" = "gray"), 
+                     guide =  FALSE) +
+  scale_size(range = c(0, 50), # update upper limit to change circle size
+             breaks = c(2, 5, 100, 300),
+             name="OR") +
+  theme_bw(base_size = 20) +
+  ylab("Base vs. A") +
+  xlab("Position") +
+  ggtitle("Up vs. Down") + 
+  guides(size = guide_legend(order = 1, 
+                             override.aes=list(colour = "gray", shape = 19))) + 
+  theme(legend.box.just = "center", legend.position = "bottom",
+        legend.box.margin = margin(t = -14))
+
+# note: scaling may appear different in the PDF file due to specified height/width
+ggsave(paste(plotpath, "F_Fig3_OddsRatioPlot_08121.pdf", sep=""),
+       width=11, height=8.5, units="in")
+
+# notes:
+# scale_color_manual() creates a legend for A, C, G, U color to match weblogos
+# new_scale_color() in ggnewscale package resets scale_clor_manual and allows multiple
+#     custom new_scale_color() statements
+# scale_size() scales circles so that area is proportional to specified value
+# scales and font sizes are optimized for 8.5x11 inch PDF file viewing
+
+```
+
