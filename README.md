@@ -1,4 +1,4 @@
-![SPOROS logo](https://github.com/ebartom/Sporos/blob/main/SPOROS2.jpg?raw=true)
+![SPOROS logo](https://github.com/ebartom/Sporos/blob/main/SPOROS.logo.jpg?raw=true)
 
 MicroRNAs (or miRNAs) are 18-22 nucleotide long noncoding short (s)RNAs that play key roles in cellular biology, suppressing gene expression by targeting the 3' untranslated region of target mRNAs. miRNAs are typically studied by sequencing short RNAs from a biological sample and then aligning them to a reference genome.  However, since the core function of a miRNA is mediated by the seed sequence located in positions 2-7 of the miRNA guide strand, we wished to group miRNAs by their 6mer seed rather than by evolutionary history and miRNA family.  To this end, **we have created a read-based analysis pipeline for analyzing short RNA sequencing data, called SPOROS**.
 
