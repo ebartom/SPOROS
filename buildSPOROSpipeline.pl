@@ -152,8 +152,11 @@ if ($justComparisons == 1){
 	    print SH "wait\n";
 	    print SH "cp \$fastq/*.fastq.gz \$workdir/\$project.fastq/\n";
 	    print SH "\n# Finished trimming.\n";
-	print SH "date\n";
+	    print SH "date\n";
 	    print SH "cd \$workdir\n";
+	} elsif ($runTrim == 0){
+	    print SH "\n# Copy reads over from input fastq folder to project fastq.\n";
+	    print SH "cp \$fastq/*.fastq.gz \$workdir/\$project.fastq/\n";
 	}
     }
     if ($table eq ""){
@@ -267,6 +270,7 @@ print SH "wait\n";
     print SH "awk \' \$3 >= 95 && \$8 > \$7 && \$10 > \$9 && \$7 < 10\'  \$tablePrefix.RNAworld.$organism.blast.txt  > \$tablePrefix.RNAworld.blast.filtered.txt\n";
     print SH "\n# Remove reads from table that have hits against RNAworld adapter sequences.\n";
     print SH "perl \$pipeline/removeRNAworldAdapterSeq.pl \$tablePrefix.minSumN.txt \$tablePrefix.RNAworld.blast.filtered.txt > \$tablePrefix.RNAworldClean.txt\n";
+    print SH "cp \$tablePrefix.RNAworldClean.txt $table\n";
     print SH "\n# Normalize raw read counts to counts per million, removing reads with fewer than $minSum counts across all samples. (Note that reads with fewer reads than the number of samples have already been removed.)\n";
     print SH "perl \$pipeline/normalizeRawCountsToCPM.pl \$tablePrefix.RNAworldClean.txt $minSum > \$tablePrefix.normCounts.txt\n";
     
@@ -284,7 +288,7 @@ print SH "wait\n";
 #    print SH "\n# Pull out smaller subsets of these tables for easy manipulation in Excel.\n";
     #print SH "perl \$pipeline/thresholdNormTotal.pl \$tablePrefix.rawCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.txt 20 > \$tablePrefix.rawCounts.table.withTox.withMiRNAandRNAworld.blast.trunc.minSum20.txt\n";
 #    print SH "perl \$pipeline/thresholdNormTotal.pl \$tablePrefix.normCounts.withTox.withMiRNAandRNAworld.blast.trunc.txt 6 > \$tablePrefix.normCounts.withTox.withMiRNAandRNAworld.blast.trunc.minSum6.txt\n";
-    print SH "\n# This \"normCounts\" file is used as the basis for many further analyses in the Peter Lab, and is the first of the official output files for the SPOROS pipelien.  For simplicity, we will rename it A_normCounts.\$project.txt and put it in a new directory with the other output files.\n";
+    print SH "\n# This \"normCounts\" file is used as the basis for many further analyses in the Peter Lab, and is the first of the official output files for the SPOROS pipeline.  For simplicity, we will rename it A_normCounts.\$project.txt and put it in a new directory with the other output files.\n";
     print SH "mkdir \$workdir/totalCounts\n";
     #print SH "cp \$workdir/prelimAnalysis/\$tablePrefix.normCounts.withTox.withMiRNAandRNAworld.blast.trunc.txt \$workdir/totalCounts/A_normCounts.\$project.txt\n";
     print SH "perl -pe \"s/$tablePrefix.RNAworld.blast.filtered.txt/RNAworld/g\"  \$workdir/prelimAnalysis/\$tablePrefix.normCounts.withTox.withMiRNAandRNAworld.blast.trunc.txt | perl -pe \"s/$tablePrefix.miRNAs.nr.blast.filtered.txt/miRNA/g\" > \$workdir/totalCounts/A_normCounts.\$project.txt\n";
