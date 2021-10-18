@@ -36,6 +36,7 @@ while (<CMP>){
 	    for (my $i=1;$i<=$#data;$i++){
 		my $sample = $samples{$i};
 		$sample =~ s/\_/\./g;
+		$sample =~ s/\-/\./g;
 		if ($data[$i] == 1){
 		    $group1samples{$sample} = 1;
 		} elsif ($data[$i] == -1){
@@ -64,6 +65,7 @@ while (<IN>){
 	@labels = split(/\t/,$_);
 	for (my $i=0;$i<=$#labels;$i++){
 	    my $label = $labels[$i];
+#	    print STDERR "$label\t$i\n";
 	    if (exists($group1samples{$label})) {
 		push (@group1indices,$i);
 		if ($keepIndividualSamples == 0){
