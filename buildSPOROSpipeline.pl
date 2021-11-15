@@ -106,7 +106,9 @@ $header .= "#SBATCH --job-name=$project.SPOROS\n";
 $header .= "#SBATCH --nodes=1\n";
 $header .= "#SBATCH -n $threads\n";
 
-print SH "$header\n";
+if ($envVar eq "internal"){
+    print SH "$header\n";
+}
 print SH "pipeline=$pipeline\n";
 print SH "project=$project\n";
 print SH "workdir=$workdir\n";
@@ -117,12 +119,16 @@ print SH "pythonENV=$pythonENV\n";
 if ($table eq ""){
     print SH "fastq=$fastq\n";
 }
-print SH "\n";
-print SH "module load perl/5.16\n";
-print SH "module load python/anaconda\n";
-print SH "module load R/3.2.1\n";
-print SH "module load bedtools/2.29.2\n";
-print SH "module load blast/2.7.1\n";
+
+if ($envVar eq "internal"){
+    print SH "\n";
+    print SH "module load perl/5.16\n";
+    print SH "module load python/anaconda\n";
+    print SH "module load R/3.2.1\n";
+    print SH "module load bedtools/2.29.2\n";
+    print SH "module load blast/2.7.1\n";
+}
+
 print SH "\n";
 print SH "cd \$workdir\n";
 
