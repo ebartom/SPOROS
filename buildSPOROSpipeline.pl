@@ -10,13 +10,16 @@ use warnings;
 no warnings 'uninitialized';
 
 unless (@ARGV) {
-    print "\nUsage: buildSPOROSpipeline.pl\n\n-d\t\t<workingDirectory>\n-o\t\t<organism>\n-id\t\t<project id>\n-b\t\t<barcodes>\n\n";
+    print "\nUsage: buildSPOROSpipeline.pl\n\n-d\t\t<workingDirectory>\n-o\t\t<organism>\n-id\t\t<project id>\n-b\t\t<barcodes>\n-env\t\t<environmentalVariables>\n\n";
 }
 
 # Set up the environment for analysis.
 my $questSporos="/projects/b1069/";
 my $NGSbartom="/projects/p20742/tools/bin/";
 my $pipeline="$questSporos/smallRNAscripts/";
+my $usefulFiles="$questSporos/usefulFiles/";
+my $pythonENV="/projects/p20742/envs/";
+my $envVar="internal";
 my $organism = "human";
 my $project="";
 my $workdir="";
@@ -46,13 +49,32 @@ GetOptions('organism|o=s' => \$organism,
 	   'minSum|ms=s' => \$minSum,
 	   'runTrim|rt=s' => \$runTrim,
 	   'justComparisons|jc=s' => \$justComparisons,
+	   'envVar|ev=s' => \$envVar,
 	   'barcodes|b=s' => \$barcodes   ) ;
+
 
 if ($workdir eq ""){
 	$workdir = "$questSporos/$project\*";
 }
 if ($fastq eq ""){
     $fastq = "$workdir/fastq";
+}
+
+if ($envVar ne "internal"){
+    print STDERR "Use $envVar shell script to set local paths for environmental variables.\n";
+    open (ENV,$envVar);
+    while(<ENV>){
+	chomp $_;
+	if ($_ =~ /^pipeline=([\w\/\-\.\_]+)$/){
+	    $pipeline = $1;
+	}
+	if ($_ =~ /^pythonENV=([\w\/\-\.\_]+)$/){
+	    $pythonENV = $1;
+	}
+	if ($_ =~ /^usefulFiles=([\w\/\-\.\_]+)$/){
+	    $usefulFiles = $1;
+	}
+    }
 }
 
 if (-e $workdir){
@@ -88,10 +110,13 @@ print SH "$header\n";
 print SH "pipeline=$pipeline\n";
 print SH "project=$project\n";
 print SH "workdir=$workdir\n";
+print SH "usefulFiles=$usefulFiles\n";
+print SH "pythonENV=$pythonENV\n";
+
+
 if ($table eq ""){
     print SH "fastq=$fastq\n";
 }
-print SH "currentDate=\$\(date\ \+\%F\)\n";
 print SH "\n";
 print SH "module load perl/5.16\n";
 print SH "module load python/anaconda\n";
@@ -251,14 +276,14 @@ if ($justComparisons == 0){
     print SH "\n# Reads are blasted (blastn-short) against custom blast databases created from all processed miRNAs and from the most recent RNA world databases, using the sequences appropriate for the organism (human or mouse). \n";
     if ($organism eq "human"){
 	print SH "# Blast reads against human miRNAs\n";
-	print SH "blastn -task blastn-short -query \$tablePrefix.reads.fa -db $questSporos/usefulFiles/humanMiRNAs.nr -outfmt 7 -num_threads $threads > \$tablePrefix.miRNAs.nr.$organism.blast.txt \& \n";
+	print SH "blastn -task blastn-short -query \$tablePrefix.reads.fa -db $usefulFiles/humanMiRNAs.nr -outfmt 7 -num_threads $threads > \$tablePrefix.miRNAs.nr.$organism.blast.txt \& \n";
 	print SH "\# Blast reads against human RNA world.\n";
-	print SH "blastn -task blastn-short -query \$tablePrefix.reads.fa -db $questSporos/usefulFiles/human_and_virus_vbrc_all_cali_annoDB_sep2015.proc -outfmt 7 -num_threads $threads > \$tablePrefix.RNAworld.$organism.blast.txt &\n";
+	print SH "blastn -task blastn-short -query \$tablePrefix.reads.fa -db $usefulFiles/human_and_virus_vbrc_all_cali_annoDB_sep2015.proc -outfmt 7 -num_threads $threads > \$tablePrefix.RNAworld.$organism.blast.txt &\n";
     } elsif ($organism eq "mouse"){
 	print SH "\# Blast reads against mouse miRNAs\n";
-	print SH "blastn -task blastn-short -query \$tablePrefix.reads.fa -db $questSporos/usefulFiles/mouseMiRNAs.nr -outfmt 7 -num_threads $threads > \$tablePrefix.miRNAs.nr.$organism.blast.txt \& \n";
+	print SH "blastn -task blastn-short -query \$tablePrefix.reads.fa -db $usefulFiles/mouseMiRNAs.nr -outfmt 7 -num_threads $threads > \$tablePrefix.miRNAs.nr.$organism.blast.txt \& \n";
 	print SH "\# Blast reads against mouse RNA world.\n";
-	print SH "blastn -task blastn-short -query \$tablePrefix.reads.fa -db $questSporos/usefulFiles/mouse_annoDB_piRNA_all_oct2013.proc -outfmt 7 -num_threads $threads > \$tablePrefix.RNAworld.$organism.blast.txt &\n";
+	print SH "blastn -task blastn-short -query \$tablePrefix.reads.fa -db $usefulFiles/mouse_annoDB_piRNA_all_oct2013.proc -outfmt 7 -num_threads $threads > \$tablePrefix.RNAworld.$organism.blast.txt &\n";
     }
 print SH "wait\n";
     print SH "\n\# After blast runs are complete, resume analysis.\n";
@@ -275,12 +300,12 @@ print SH "wait\n";
     print SH "perl \$pipeline/normalizeRawCountsToCPM.pl \$tablePrefix.RNAworldClean.txt $minSum > \$tablePrefix.normCounts.txt\n";
     
     print SH "\n # Add seeds, toxicities, blast hits to normalized counts table.\n";
-    print SH "perl $questSporos/usefulFiles/addAllToxicities.pl $questSporos/usefulFiles/speciesToxes.txt \$tablePrefix.normCounts.txt > \$tablePrefix.normCounts.withTox.txt\n";
+    print SH "perl $usefulFiles/addAllToxicities.pl $usefulFiles/speciesToxes.txt \$tablePrefix.normCounts.txt > \$tablePrefix.normCounts.withTox.txt\n";
     print SH "perl \$pipeline/addBLASTresults.pl \$tablePrefix.normCounts.withTox.txt \$tablePrefix.miRNAs.nr.blast.filtered.txt > \$tablePrefix.normCounts.withTox.withMiRNAblast.txt\n";
     print SH "perl \$pipeline/addBLASTresults.pl \$tablePrefix.normCounts.withTox.withMiRNAblast.txt \$tablePrefix.RNAworld.blast.filtered.txt > \$tablePrefix.normCounts.withTox.withMiRNAandRNAworld.blast.txt\n";
     print SH "perl \$pipeline/truncateBLASTresults.pl \$tablePrefix.normCounts.withTox.withMiRNAandRNAworld.blast.txt > \$tablePrefix.normCounts.withTox.withMiRNAandRNAworld.blast.trunc.txt\n";
     print SH "\n # Add seeds, toxicities, blast hits to raw counts table.\n";
-    print SH "perl $questSporos/usefulFiles/addAllToxicities.pl $questSporos/usefulFiles/speciesToxes.txt \$tablePrefix.RNAworldClean.txt > \$tablePrefix.withTox.txt\n";
+    print SH "perl $usefulFiles/addAllToxicities.pl $usefulFiles/speciesToxes.txt \$tablePrefix.RNAworldClean.txt > \$tablePrefix.withTox.txt\n";
     print SH "perl \$pipeline/addBLASTresults.pl \$tablePrefix.withTox.txt \$tablePrefix.miRNAs.nr.blast.filtered.txt > \$tablePrefix.withTox.withMiRNAblast.txt\n";
     print SH "perl \$pipeline/addBLASTresults.pl \$tablePrefix.withTox.withMiRNAblast.txt \$tablePrefix.RNAworld.blast.filtered.txt > \$tablePrefix.withTox.withMiRNAandRNAworld.blast.txt\n";
     print SH "perl \$pipeline/truncateBLASTresults.pl \$tablePrefix.withTox.withMiRNAandRNAworld.blast.txt > \$tablePrefix.withTox.withMiRNAandRNAworld.blast.trunc.txt\n";
@@ -313,7 +338,7 @@ print SH "wait\n";
     print SH "\t# This generates files that start with the words E_seedAnalysis and F_seedExpand, one for each sample and average of replicate samples.\n";
     print SH "\n\t# Run weblogo.\n";
     print SH "\tmodule load python/anaconda3.6\n";
-    print SH "\tsource activate /projects/p20742/envs/weblogo-py38\n";
+    print SH "\tsource activate $pythonENV/weblogo-py38\n";
     print SH "\tfor f in E_seedAnalysis*.txt\n\tdo\n";
     print SH "\t\techo \$f\n";
     print SH "\t\tsample=\$\{f\%\%.txt\}\n";
@@ -346,7 +371,7 @@ print SH "wait\n";
     print SH "\tpaste test.\*.tox > D_toxAnalysis.combined.\$seqtype.txt\n";
     print SH "\trm test.\*.tox\n\n";
     print SH "\t# Plot a very basic box plot summarizing the tox distributions in the different samples.\n";
-    print SH "\tRscript /projects/b1069/smallRNAscripts/plotToxBoxPlot.R --toxFile=D_toxAnalysis.combined.\$seqtype.txt\n\n";
+    print SH "\tRscript $pipeline/plotToxBoxPlot.R --toxFile=D_toxAnalysis.combined.\$seqtype.txt\n\n";
     print SH "\t# Analysis done for \$seqtype.\n";
     print SH "\tdone\n";
     print SH "date\n";
@@ -372,7 +397,7 @@ if ($comparisons ne ""){
     print SH "\tcd \$workdir/prelimAnalysis/\n";
     print SH "\tperl -pe \"s\/\\\"\/\/g\" \$edgeR > \$comp.txt\n";
     print SH "\n\t# Add seed toxicity and source sequences to edgeR results.\n";
-    print SH "\tperl $questSporos/usefulFiles/addAllToxicities.pl $questSporos/usefulFiles/speciesToxes.txt \$comp.txt > \$comp.withTox.txt\n";
+    print SH "\tperl $usefulFiles/addAllToxicities.pl $usefulFiles/speciesToxes.txt \$comp.txt > \$comp.withTox.txt\n";
     print SH "\tperl \$pipeline/addBLASTresults.pl \$comp.withTox.txt \$tablePrefix.miRNAs.nr.blast.filtered.txt > \$comp.withTox.withMiRNAblast.txt\n";
     print SH "\tperl \$pipeline/addBLASTresults.pl \$comp.withTox.withMiRNAblast.txt \$tablePrefix.RNAworld.blast.filtered.txt > \$comp.withTox.withMiRNAandRNAworld.blast.txt\n";
     print SH "\tperl \$pipeline/truncateBLASTresults.pl \$comp.withTox.withMiRNAandRNAworld.blast.txt > \$comp.withTox.withMiRNAandRNAworld.blast.trunc.txt\n";
@@ -415,7 +440,7 @@ if ($comparisons ne ""){
 
     print SH "\n\t\t\t# Run weblogo.\n";
     print SH "\t\t\tmodule load python/anaconda3.6\n";
-    print SH "\t\t\tsource activate /projects/p20742/envs/weblogo-py38\n";
+    print SH "\t\t\tsource activate $pythonENV/weblogo-py38\n";
     print SH "\t\t\tfor f in E_seedAnalysis*Delta*txt\n";
     print SH "\t\t\tdo\n";
     print SH "\t\t\t\techo \$f\n";
@@ -436,7 +461,7 @@ print SH "\t\t\t\tweblogo -f \$sample.txt -A rna --show-xaxis NO --show-yaxis NO
     print SH "\t\t\tpaste test.\*.tox > D_toxAnalysis.combined.\$seqtype.txt\n";
     print SH "\t\t\trm test.\*.tox\n\n";
     print SH "\t\t\t# Plot a very basic box plot summarizing the tox distributions in the different samples.\n";
-    print SH "\t\t\tRscript /projects/b1069/smallRNAscripts/plotToxBoxPlot.R --toxFile=D_toxAnalysis.combined.\$seqtype.txt\n";
+    print SH "\t\t\tRscript $pipeline/plotToxBoxPlot.R --toxFile=D_toxAnalysis.combined.\$seqtype.txt\n";
     print SH "\t\t\tdone\n";
     print SH "\t\tdone\n";
     print SH "\tdone\n";

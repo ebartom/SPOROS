@@ -13,6 +13,8 @@
 pipeline=/projects/b1069//smallRNAscripts/
 project=Figure2
 workdir=/projects/b1069/Figure2.SPOROSpaper
+usefulFiles=/projects/b1069//usefulFiles/
+pythonENV=/projects/p20742/envs/
 fastq=/projects/b1069/Figure2.SPOROSpaper/input/fastq/
 currentDate=$(date +%F)
 
@@ -125,9 +127,9 @@ awk ' $1 !~ "Read" {printf ">%s.%d\n%s\n",$1,$NF,$1}' Figure2.noAdapter.notUMId.
 
 # Reads are blasted (blastn-short) against custom blast databases created from all processed miRNAs and from the most recent RNA world databases, using the sequences appropriate for the organism (human or mouse). 
 # Blast reads against human miRNAs
-blastn -task blastn-short -query $tablePrefix.reads.fa -db /projects/b1069//usefulFiles/humanMiRNAs.nr -outfmt 7 -num_threads 24 > $tablePrefix.miRNAs.nr.human.blast.txt & 
+blastn -task blastn-short -query $tablePrefix.reads.fa -db /projects/b1069//usefulFiles//humanMiRNAs.nr -outfmt 7 -num_threads 24 > $tablePrefix.miRNAs.nr.human.blast.txt & 
 # Blast reads against human RNA world.
-blastn -task blastn-short -query $tablePrefix.reads.fa -db /projects/b1069//usefulFiles/human_and_virus_vbrc_all_cali_annoDB_sep2015.proc -outfmt 7 -num_threads 24 > $tablePrefix.RNAworld.human.blast.txt &
+blastn -task blastn-short -query $tablePrefix.reads.fa -db /projects/b1069//usefulFiles//human_and_virus_vbrc_all_cali_annoDB_sep2015.proc -outfmt 7 -num_threads 24 > $tablePrefix.RNAworld.human.blast.txt &
 wait
 
 # After blast runs are complete, resume analysis.
@@ -141,23 +143,24 @@ awk ' $3 >= 95 && $8 > $7 && $10 > $9 && $7 < 10'  $tablePrefix.RNAworld.human.b
 
 # Remove reads from table that have hits against RNAworld adapter sequences.
 perl $pipeline/removeRNAworldAdapterSeq.pl $tablePrefix.minSumN.txt $tablePrefix.RNAworld.blast.filtered.txt > $tablePrefix.RNAworldClean.txt
+cp $tablePrefix.RNAworldClean.txt Figure2.noAdapter.notUMId.rawCounts.table.txt
 
 # Normalize raw read counts to counts per million, removing reads with fewer than 2 counts across all samples. (Note that reads with fewer reads than the number of samples have already been removed.)
 perl $pipeline/normalizeRawCountsToCPM.pl $tablePrefix.RNAworldClean.txt 2 > $tablePrefix.normCounts.txt
 
  # Add seeds, toxicities, blast hits to normalized counts table.
-perl /projects/b1069//usefulFiles/addAllToxicities.pl /projects/b1069//usefulFiles/speciesToxes.txt $tablePrefix.normCounts.txt > $tablePrefix.normCounts.withTox.txt
+perl /projects/b1069//usefulFiles//addAllToxicities.pl /projects/b1069//usefulFiles//speciesToxes.txt $tablePrefix.normCounts.txt > $tablePrefix.normCounts.withTox.txt
 perl $pipeline/addBLASTresults.pl $tablePrefix.normCounts.withTox.txt $tablePrefix.miRNAs.nr.blast.filtered.txt > $tablePrefix.normCounts.withTox.withMiRNAblast.txt
 perl $pipeline/addBLASTresults.pl $tablePrefix.normCounts.withTox.withMiRNAblast.txt $tablePrefix.RNAworld.blast.filtered.txt > $tablePrefix.normCounts.withTox.withMiRNAandRNAworld.blast.txt
 perl $pipeline/truncateBLASTresults.pl $tablePrefix.normCounts.withTox.withMiRNAandRNAworld.blast.txt > $tablePrefix.normCounts.withTox.withMiRNAandRNAworld.blast.trunc.txt
 
  # Add seeds, toxicities, blast hits to raw counts table.
-perl /projects/b1069//usefulFiles/addAllToxicities.pl /projects/b1069//usefulFiles/speciesToxes.txt $tablePrefix.RNAworldClean.txt > $tablePrefix.withTox.txt
+perl /projects/b1069//usefulFiles//addAllToxicities.pl /projects/b1069//usefulFiles//speciesToxes.txt $tablePrefix.RNAworldClean.txt > $tablePrefix.withTox.txt
 perl $pipeline/addBLASTresults.pl $tablePrefix.withTox.txt $tablePrefix.miRNAs.nr.blast.filtered.txt > $tablePrefix.withTox.withMiRNAblast.txt
 perl $pipeline/addBLASTresults.pl $tablePrefix.withTox.withMiRNAblast.txt $tablePrefix.RNAworld.blast.filtered.txt > $tablePrefix.withTox.withMiRNAandRNAworld.blast.txt
 perl $pipeline/truncateBLASTresults.pl $tablePrefix.withTox.withMiRNAandRNAworld.blast.txt > $tablePrefix.withTox.withMiRNAandRNAworld.blast.trunc.txt
 
-# This "normCounts" file is used as the basis for many further analyses in the Peter Lab, and is the first of the official output files for the SPOROS pipelien.  For simplicity, we will rename it A_normCounts.$project.txt and put it in a new directory with the other output files.
+# This "normCounts" file is used as the basis for many further analyses in the Peter Lab, and is the first of the official output files for the SPOROS pipeline.  For simplicity, we will rename it A_normCounts.$project.txt and put it in a new directory with the other output files.
 mkdir $workdir/totalCounts
 perl -pe "s/Figure2.noAdapter.notUMId.rawCounts.table.RNAworld.blast.filtered.txt/RNAworld/g"  $workdir/prelimAnalysis/$tablePrefix.normCounts.withTox.withMiRNAandRNAworld.blast.trunc.txt | perl -pe "s/Figure2.noAdapter.notUMId.rawCounts.table.miRNAs.nr.blast.filtered.txt/miRNA/g" > $workdir/totalCounts/A_normCounts.$project.txt
 # Also copy over rawCounts version.
@@ -187,7 +190,7 @@ do
 
 	# Run weblogo.
 	module load python/anaconda3.6
-	source activate /projects/p20742/envs/weblogo-py38
+	source activate /projects/p20742/envs//weblogo-py38
 	for f in E_seedAnalysis*.txt
 	do
 		echo $f
@@ -224,7 +227,7 @@ do
 	rm test.*.tox
 
 	# Plot a very basic box plot summarizing the tox distributions in the different samples.
-	Rscript /projects/b1069/smallRNAscripts/plotToxBoxPlot.R --toxFile=D_toxAnalysis.combined.$seqtype.txt
+	Rscript /projects/b1069//smallRNAscripts//plotToxBoxPlot.R --toxFile=D_toxAnalysis.combined.$seqtype.txt
 
 	# Analysis done for $seqtype.
 	done
