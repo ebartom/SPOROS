@@ -159,7 +159,11 @@ if ($justComparisons == 1){
 	    if ($barcode =~ /\/?([\w\_\-\.]+).barcodes.txt/){
 		$sampleGroup = $1;
 	    print SH "# Demultiplexing samples for sample group $sampleGroup\n";
-		print SH "perl $NGSbartom/trim_galore \$fastq/$sampleGroup.fastq.gz --length 12 --dont_gzip -o \$workdir/demultiplex/ \n";
+        if ($envVar eq "internal") {
+    		print SH "perl $NGSbartom/trim_galore \$fastq/$sampleGroup.fastq.gz --length 12 --dont_gzip -o \$workdir/demultiplex/ \n";
+        } else {
+            print SH "trim_galore \$fastq/$sampleGroup.fastq.gz --length 12 --dont_gzip -o \$workdir/demultiplex/ \n";
+        }
 		print SH "perl \$pipeline/splitFastQwithTable.pl $sampleGroup\_trimmed.fq $sampleGroup.barcodes.txt 0\n";
 		print SH "mv *.fastq \$workdir/\$project.fastq/\n";
 		print SH "gzip \$workdir/\$project.fastq/*.fastq \&\n";
@@ -343,15 +347,19 @@ print SH "wait\n";
     print SH "\tperl \$pipeline/expandSequencesFromSeedKeyed.pl Int_seedKeyed.\$seqtype.$organism.\$project.txt \$seqtype \$project\n";
     print SH "\t# This generates files that start with the words E_seedAnalysis and F_seedExpand, one for each sample and average of replicate samples.\n";
     print SH "\n\t# Run weblogo.\n";
-    print SH "\tmodule load python/anaconda3.6\n";
-    print SH "\tsource activate $pythonENV/weblogo-py38\n";
+    if ($envVar eq "internal"){
+        print SH "\tmodule load python/anaconda3.6\n";
+        print SH "\tsource activate $pythonENV/weblogo-py38\n";
+    }
     print SH "\tfor f in E_seedAnalysis*.txt\n\tdo\n";
     print SH "\t\techo \$f\n";
     print SH "\t\tsample=\$\{f\%\%.txt\}\n";
 #    print SH "\t\tweblogo -f \$f -A rna --show-xaxis NO --show-yaxis NO -U probability -F pdf -o \$sample.pdf \\\n\t\t\t--color \"\#CC0000\" G guanine --color \"\#FFB302\" C cytosine --color \"\#0100CC\" A adenine --color \"\#01CC00\" U uracil \\\n\t\t\t--size large --logo-font Helvetica-Extra-Bold --ylabel Probability --number-interval 1\n";
     print SH "\t\tweblogo -f \$f -A rna --show-xaxis NO --show-yaxis NO -U probability -F png_print -o \$sample.png \\\n\t\t\t--color \"\#CC0000\" G guanine --color \"\#FFB302\" C cytosine --color \"\#0100CC\" A adenine --color \"\#01CC00\" U uracil \\\n\t\t\t--size large --logo-font Helvetica-Extra-Bold --ylabel Probability --number-interval 1\n";
     print SH "\t\tdone \n";
-    print SH "\tsource deactivate\n\n";
+    if ($envVar eq "internal"){
+        print SH "\tsource deactivate\n\n";
+    }
     print SH "\t# Compile the toxAnalysis files into one multi-column summary.\n";
     print SH "\t# If there are averaged files, use those.\n";
     print SH "\tif ls | grep -q \"avg\"; then\n";
@@ -387,7 +395,9 @@ print SH "wait\n";
 if ($comparisons ne ""){
     print SH "\n# Running differential read analysis.\n";
     print SH "\nmkdir \$workdir/differential\n";
-    print SH "module load R/3.2.1\n";
+    if ($envVar eq "internal"){
+        print SH "module load R/3.2.1\n";
+    }
     print SH "cd \$workdir/prelimAnalysis\n";
     print SH "\n# Run EdgeR on the comparisons file to identify differentially abundant reads.\n";
     print SH "# (Note that assembly is not actually used here, because these are reads, not gene IDs)\n";
@@ -445,8 +455,10 @@ if ($comparisons ne ""){
 ##    print SH "\t\tperl \$pipeline/expandToxesFromSeedCollapsed.pl B_collapsed.\$comp.diff.avgd.txt $organism \$seqtype diff\n";
 
     print SH "\n\t\t\t# Run weblogo.\n";
-    print SH "\t\t\tmodule load python/anaconda3.6\n";
-    print SH "\t\t\tsource activate $pythonENV/weblogo-py38\n";
+    if ($envVar eq "internal"){   
+        print SH "\t\t\tmodule load python/anaconda3.6\n";
+        print SH "\t\t\tsource activate $pythonENV/weblogo-py38\n";
+    }
     print SH "\t\t\tfor f in E_seedAnalysis*Delta*txt\n";
     print SH "\t\t\tdo\n";
     print SH "\t\t\t\techo \$f\n";
@@ -454,7 +466,9 @@ if ($comparisons ne ""){
 #    print SH "\t\t\t\tweblogo -f \$sample.txt -A rna --show-xaxis NO --show-yaxis NO -U probability -F pdf -o \$sample.pdf \\\n\t\t\t\t\t--color \"\#CC0000\" G guanine --color \"\#FFB302\" C cytosine --color \"\#0100CC\" A adenine --color \"\#01CC00\" U uracil \\\n\t\t\t\t\t--size large --logo-font Helvetica-Extra-Bold --ylabel Probability --number-interval 1\n";
 print SH "\t\t\t\tweblogo -f \$sample.txt -A rna --show-xaxis NO --show-yaxis NO -U probability -F png_print -o \$sample.png \\\n\t\t\t\t\t--color \"\#CC0000\" G guanine --color \"\#FFB302\" C cytosine --color \"\#0100CC\" A adenine --color \"\#01CC00\" U uracil \\\n\t\t\t\t\t--size large --logo-font Helvetica-Extra-Bold --ylabel Probability --number-interval 1\n";
     print SH "\t\t\t\tdone\n";
-    print SH "\t\t\tsource deactivate\n\n";
+    if ($envVar eq "internal"){
+        print SH "\t\t\tsource deactivate\n\n";
+    }
     print SH "\t\t\t# Compile the delta toxAnalysis files into one multi-column summary.\n";
     print SH "\t\t\tfor d in D_toxAnalysis.delta.*.txt\n";
     print SH "\t\t\tdo\n";

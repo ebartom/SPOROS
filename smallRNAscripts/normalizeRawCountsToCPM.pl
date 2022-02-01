@@ -21,7 +21,7 @@ my $stuff = "";
 open(IN,$rawCountsTable);
 while (<IN>){
     chomp $_;
-    if ($_ =~ /^Read/){
+    if (($_ =~ /^Read/) || ($_ =~ /^Symbol/)){
 	($stuff,@headers) = split(/\t/,$_);
 	$numSamples = $#headers;
 	if (($headers[$numSamples] eq "NormTotal") || 
